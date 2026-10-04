@@ -13,3 +13,9 @@ body {
   min-width: 320px;
   font-family: 'Quicksand', sans-serif;
 }
+
+button,
+input,
+select {
+  font: inherit;
+}
