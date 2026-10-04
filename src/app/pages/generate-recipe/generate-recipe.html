@@ -12,18 +12,47 @@
     </section>
 
     <div class="generator-workspace">
-      <form class="ingredient-card" (ngSubmit)="addIngredient()">
-        <label class="field ingredient-field">
-          <span>Ingredient</span>
-          <input
-            type="text"
-            name="ingredientName"
-            [(ngModel)]="ingredientName"
-            placeholder="e.g. tomato"
-            autocomplete="off"
-            required
-          />
-        </label>
+      <form
+        class="ingredient-card"
+        [class.ingredient-card--autocomplete]="isIngredientMenuOpen"
+        (ngSubmit)="addIngredient()"
+      >
+        <div class="field ingredient-field">
+          <label for="ingredient-name">Ingredient</label>
+
+          <div class="ingredient-input-wrap">
+            <input
+              id="ingredient-name"
+              type="text"
+              name="ingredientName"
+              [ngModel]="ingredientName"
+              placeholder="e.g. tomato"
+              autocomplete="off"
+              aria-autocomplete="list"
+              [attr.aria-expanded]="isIngredientMenuOpen"
+              (ngModelChange)="updateIngredientMenu($event)"
+              (focus)="updateIngredientMenu(ingredientName)"
+              (click)="$event.stopPropagation()"
+              required
+            />
+
+            @if (isIngredientMenuOpen) {
+              <ul class="ingredient-suggestions" role="listbox">
+                @for (suggestion of filteredIngredientSuggestions; track suggestion) {
+                  <li>
+                    <button
+                      type="button"
+                      role="option"
+                      (click)="selectIngredient(suggestion, $event)"
+                    >
+                      {{ suggestion }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
 
         <div class="field serving-field">
           <span>Serving size</span>
@@ -41,14 +70,33 @@
             />
 
             <div class="measurement-control">
-              <select name="unit" [(ngModel)]="unit" aria-label="Measurement">
-                <option value="gram">gram</option>
-                <option value="kilogram">kg</option>
-                <option value="milliliter">ml</option>
-                <option value="piece">piece</option>
-                <option value="tablespoon">tbsp</option>
-                <option value="teaspoon">tsp</option>
-              </select>
+              <button
+                class="measurement-button"
+                type="button"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="isUnitMenuOpen"
+                (click)="toggleUnitMenu($event)"
+              >
+                <span>{{ unit }}</span>
+                <span class="measurement-arrow" aria-hidden="true"></span>
+              </button>
+
+              @if (isUnitMenuOpen) {
+                <ul class="measurement-menu" role="listbox">
+                  @for (unitOption of units; track unitOption) {
+                    <li>
+                      <button
+                        type="button"
+                        role="option"
+                        [attr.aria-selected]="unit === unitOption"
+                        (click)="selectUnit(unitOption, $event)"
+                      >
+                        {{ unitOption }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
             </div>
 
             <button class="add-button" type="submit" aria-label="Add ingredient">+</button>
