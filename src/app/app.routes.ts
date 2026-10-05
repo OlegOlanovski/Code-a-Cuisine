@@ -13,6 +13,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'generate-recipe/preferences',
+    loadComponent: () =>
+      import('./pages/preferences/preferences').then((component) => component.Preferences),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

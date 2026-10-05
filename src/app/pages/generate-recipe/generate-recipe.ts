@@ -1,12 +1,7 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-
-interface Ingredient {
-  name: string;
-  quantity: number;
-  unit: string;
-}
+import { RecipeDraft } from '../../services/recipe-draft';
 
 @Component({
   selector: 'app-generate-recipe',
@@ -15,6 +10,8 @@ interface Ingredient {
   styleUrl: './generate-recipe.scss',
 })
 export class GenerateRecipe {
+  private readonly recipeDraft = inject(RecipeDraft);
+
   protected ingredientName = '';
   protected quantity: number | null = null;
   protected unit = 'gram';
@@ -22,7 +19,8 @@ export class GenerateRecipe {
   protected readonly ingredientSuggestions = ['Pasta', 'Pastrami', 'Passionsfrut'];
   protected isUnitMenuOpen = false;
   protected isIngredientMenuOpen = false;
-  protected readonly ingredients = signal<Ingredient[]>([]);
+  protected editingIngredientIndex: number | null = null;
+  protected readonly ingredients = this.recipeDraft.ingredients;
 
   protected get filteredIngredientSuggestions(): string[] {
     const query = this.ingredientName.trim().toLocaleLowerCase();
@@ -73,19 +71,61 @@ export class GenerateRecipe {
       return;
     }
 
-    this.ingredients.update((ingredients) => [
-      { name, quantity: this.quantity as number, unit: this.unit },
-      ...ingredients,
-    ]);
+    const ingredient = { name, quantity: this.quantity as number, unit: this.unit };
+
+    if (this.editingIngredientIndex === null) {
+      this.ingredients.update((ingredients) => [ingredient, ...ingredients]);
+    } else {
+      const editingIndex = this.editingIngredientIndex;
+
+      this.ingredients.update((ingredients) =>
+        ingredients.map((currentIngredient, index) =>
+          index === editingIndex ? ingredient : currentIngredient,
+        ),
+      );
+    }
 
     this.ingredientName = '';
     this.quantity = null;
+    this.editingIngredientIndex = null;
     this.isIngredientMenuOpen = false;
+  }
+
+  protected editIngredient(index: number): void {
+    const ingredient = this.ingredients()[index];
+
+    if (!ingredient) {
+      return;
+    }
+
+    this.ingredientName = ingredient.name;
+    this.quantity = ingredient.quantity;
+    this.unit = ingredient.unit;
+    this.editingIngredientIndex = index;
+    this.closeMenus();
   }
 
   protected removeIngredient(index: number): void {
     this.ingredients.update((ingredients) =>
       ingredients.filter((_, ingredientIndex) => ingredientIndex !== index),
     );
+
+    if (this.editingIngredientIndex !== null) {
+      this.ingredientName = '';
+      this.quantity = null;
+      this.editingIngredientIndex = null;
+    }
+  }
+
+  protected unitAbbreviation(unit: string): string {
+    if (unit === 'gram') {
+      return 'g';
+    }
+
+    if (unit === 'piece') {
+      return '';
+    }
+
+    return unit;
   }
 }

@@ -1,0 +1,113 @@
+<div class="preferences-page">
+  <header class="preferences-header">
+    <a class="preferences-logo" routerLink="/" aria-label="Code à Cuisine home">
+      <img src="/images/logo.png" alt="Code à Cuisine" />
+    </a>
+
+    <a class="back-link" routerLink="/generate-recipe">
+      <span aria-hidden="true">←</span>
+      Ingredients
+    </a>
+  </header>
+
+  <main class="preferences-main">
+    <h1>Choose your preferences</h1>
+
+    <section class="preferences-content" aria-label="Recipe preferences">
+      <div class="counter-grid">
+        <div class="counter-group">
+          <h2>How many portions you need?</h2>
+
+          <div class="counter-control">
+            <button type="button" (click)="changePortions(-1)" aria-label="Decrease portions">
+              −
+            </button>
+            <output>{{ portions() }}</output>
+            <span>{{ portions() === 1 ? 'Portion' : 'Portions' }}</span>
+            <button type="button" (click)="changePortions(1)" aria-label="Increase portions">
+              +
+            </button>
+          </div>
+        </div>
+
+        <div class="counter-group">
+          <h2>How many are cooking?</h2>
+
+          <div class="counter-control">
+            <button type="button" (click)="changeCooks(-1)" aria-label="Decrease cooks">−</button>
+            <output>{{ cooks() }}</output>
+            <span>{{ cooks() === 1 ? 'Person' : 'People' }}</span>
+            <button type="button" (click)="changeCooks(1)" aria-label="Increase cooks">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="preferences-card">
+        <section class="preference-section cooking-time-section">
+          <h2>
+            <span class="section-icon" aria-hidden="true">◷</span>
+            Cooking time:
+          </h2>
+
+          <div class="time-options">
+            @for (option of cookingTimes; track option.label) {
+              <div class="time-option">
+                <button
+                  type="button"
+                  [class.is-selected]="cookingTime() === option.label"
+                  [attr.aria-pressed]="cookingTime() === option.label"
+                  (click)="selectCookingTime(option.label)"
+                >
+                  {{ option.label }}
+                </button>
+                <span>{{ option.description }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="preference-section">
+          <h2>
+            <span class="section-icon" aria-hidden="true">◉</span>
+            Cuisine
+          </h2>
+
+          <div class="tag-options">
+            @for (option of cuisines; track option) {
+              <button
+                type="button"
+                [class.is-selected]="cuisine() === option"
+                [attr.aria-pressed]="cuisine() === option"
+                (click)="selectCuisine(option)"
+              >
+                {{ option }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="preference-section">
+          <h2>
+            <span class="section-icon cutlery" aria-hidden="true">♨</span>
+            Diet preferences
+          </h2>
+
+          <div class="tag-options">
+            @for (option of diets; track option) {
+              <button
+                type="button"
+                [class.is-selected]="diet() === option"
+                [attr.aria-pressed]="diet() === option"
+                (click)="selectDiet(option)"
+              >
+                {{ option }}
+              </button>
+            }
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <button class="generate-button" type="button">Generate a recipe</button>
+  </main>
+</div>
