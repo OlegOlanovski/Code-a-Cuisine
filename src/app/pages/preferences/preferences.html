@@ -123,22 +123,35 @@
         aria-describedby="recipe-error-description"
         (click)="$event.stopPropagation()"
       >
-        <button
-          class="error-popup-close"
-          type="button"
-          aria-label="Close error message"
-          (click)="closeErrorPopup()"
-        >
-          ×
-        </button>
+        <div class="error-popup-topbar">
+          <button
+            class="error-popup-close"
+            type="button"
+            aria-label="Close error message"
+            (click)="closeErrorPopup()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4 20 20M20 4 4 20" />
+            </svg>
+          </button>
+        </div>
 
-        <div class="error-popup-icon" aria-hidden="true">!</div>
-        <h2 id="recipe-error-title">Unable to generate a recipe</h2>
-        <p id="recipe-error-description">
-          Please add at least two ingredients and enough quantity for {{ portions() }} portions.
-          Check your preferences, then try again.
-        </p>
-        <button class="error-popup-action" type="button" (click)="closeErrorPopup()">Got it</button>
+        <div class="error-popup-content">
+          <div class="error-popup-copy">
+            <h2 id="recipe-error-title">Ups! Not quite enough...</h2>
+            <p id="recipe-error-description">
+              It looks like some ingredient quantities aren’t sufficient for your selected servings.
+              Please add or adjust quantities and try again.
+            </p>
+          </div>
+
+          <a class="error-popup-action" routerLink="/generate-recipe" (click)="closeErrorPopup()">
+            <span>Go back to ingredients</span>
+            <svg viewBox="0 0 24 20" aria-hidden="true">
+              <path d="M1 10h21M14 2l8 8-8 8" />
+            </svg>
+          </a>
+        </div>
       </section>
     </div>
   }
