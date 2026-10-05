@@ -23,7 +23,7 @@
               −
             </button>
             <output>{{ portions() }}</output>
-            <span>{{ portions() === 1 ? 'Portion' : 'Portions' }}</span>
+            <span>Portions</span>
             <button type="button" (click)="changePortions(1)" aria-label="Increase portions">
               +
             </button>
@@ -36,7 +36,7 @@
           <div class="counter-control">
             <button type="button" (click)="changeCooks(-1)" aria-label="Decrease cooks">−</button>
             <output>{{ cooks() }}</output>
-            <span>{{ cooks() === 1 ? 'Person' : 'People' }}</span>
+            <span>Person</span>
             <button type="button" (click)="changeCooks(1)" aria-label="Increase cooks">+</button>
           </div>
         </div>
@@ -108,6 +108,38 @@
       </div>
     </section>
 
-    <button class="generate-button" type="button">Generate a recipe</button>
+    <button class="generate-button" type="button" (click)="generateRecipe()">
+      Generate a recipe
+    </button>
   </main>
+
+  @if (isErrorPopupOpen()) {
+    <div class="error-popup-backdrop" (click)="closeErrorPopup()">
+      <section
+        class="error-popup"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="recipe-error-title"
+        aria-describedby="recipe-error-description"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="error-popup-close"
+          type="button"
+          aria-label="Close error message"
+          (click)="closeErrorPopup()"
+        >
+          ×
+        </button>
+
+        <div class="error-popup-icon" aria-hidden="true">!</div>
+        <h2 id="recipe-error-title">Unable to generate a recipe</h2>
+        <p id="recipe-error-description">
+          Please add at least two ingredients and enough quantity for {{ portions() }} portions.
+          Check your preferences, then try again.
+        </p>
+        <button class="error-popup-action" type="button" (click)="closeErrorPopup()">Got it</button>
+      </section>
+    </div>
+  }
 </div>
