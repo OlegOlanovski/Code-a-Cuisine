@@ -40,7 +40,7 @@ describe('Preferences', () => {
     expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeTruthy();
   });
 
-  it('does not show the error popup when the recipe request is valid', () => {
+  it('shows the loading screen when the recipe request is valid', () => {
     const recipeDraft = TestBed.inject(RecipeDraft);
     recipeDraft.ingredients.set([
       { name: 'Pasta', quantity: 400, unit: 'gram' },
@@ -57,6 +57,8 @@ describe('Preferences', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('[role="status"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.preferences-page')).toBeFalsy();
   });
 });
 

@@ -1,158 +1,162 @@
-<div class="preferences-page">
-  <header class="preferences-header">
-    <a class="preferences-logo" routerLink="/" aria-label="Code à Cuisine home">
-      <img src="/images/logo.png" alt="Code à Cuisine" />
-    </a>
+@if (isGenerating()) {
+  <app-loading-screen message="Generating recipe" />
+} @else {
+  <div class="preferences-page">
+    <header class="preferences-header">
+      <a class="preferences-logo" routerLink="/" aria-label="Code à Cuisine home">
+        <img src="/images/logo.png" alt="Code à Cuisine" />
+      </a>
 
-    <a class="back-link" routerLink="/generate-recipe">
-      <span aria-hidden="true">←</span>
-      Ingredients
-    </a>
-  </header>
+      <a class="back-link" routerLink="/generate-recipe">
+        <span aria-hidden="true">←</span>
+        Ingredients
+      </a>
+    </header>
 
-  <main class="preferences-main">
-    <h1>Choose your preferences</h1>
+    <main class="preferences-main">
+      <h1>Choose your preferences</h1>
 
-    <section class="preferences-content" aria-label="Recipe preferences">
-      <div class="counter-grid">
-        <div class="counter-group">
-          <h2>How many portions you need?</h2>
+      <section class="preferences-content" aria-label="Recipe preferences">
+        <div class="counter-grid">
+          <div class="counter-group">
+            <h2>How many portions you need?</h2>
 
-          <div class="counter-control">
-            <button type="button" (click)="changePortions(-1)" aria-label="Decrease portions">
-              −
-            </button>
-            <output>{{ portions() }}</output>
-            <span>Portions</span>
-            <button type="button" (click)="changePortions(1)" aria-label="Increase portions">
-              +
-            </button>
+            <div class="counter-control">
+              <button type="button" (click)="changePortions(-1)" aria-label="Decrease portions">
+                −
+              </button>
+              <output>{{ portions() }}</output>
+              <span>Portions</span>
+              <button type="button" (click)="changePortions(1)" aria-label="Increase portions">
+                +
+              </button>
+            </div>
+          </div>
+
+          <div class="counter-group">
+            <h2>How many are cooking?</h2>
+
+            <div class="counter-control">
+              <button type="button" (click)="changeCooks(-1)" aria-label="Decrease cooks">−</button>
+              <output>{{ cooks() }}</output>
+              <span>Person</span>
+              <button type="button" (click)="changeCooks(1)" aria-label="Increase cooks">+</button>
+            </div>
           </div>
         </div>
 
-        <div class="counter-group">
-          <h2>How many are cooking?</h2>
+        <div class="preferences-card">
+          <section class="preference-section cooking-time-section">
+            <h2>
+              <img class="section-icon" src="/icons/clock.svg" alt="" aria-hidden="true" />
+              Cooking time:
+            </h2>
 
-          <div class="counter-control">
-            <button type="button" (click)="changeCooks(-1)" aria-label="Decrease cooks">−</button>
-            <output>{{ cooks() }}</output>
-            <span>Person</span>
-            <button type="button" (click)="changeCooks(1)" aria-label="Increase cooks">+</button>
-          </div>
-        </div>
-      </div>
+            <div class="time-options">
+              @for (option of cookingTimes; track option.label) {
+                <div class="time-option">
+                  <button
+                    type="button"
+                    [class.is-selected]="cookingTime() === option.label"
+                    [attr.aria-pressed]="cookingTime() === option.label"
+                    (click)="selectCookingTime(option.label)"
+                  >
+                    {{ option.label }}
+                  </button>
+                  <span>{{ option.description }}</span>
+                </div>
+              }
+            </div>
+          </section>
 
-      <div class="preferences-card">
-        <section class="preference-section cooking-time-section">
-          <h2>
-            <img class="section-icon" src="/icons/clock.svg" alt="" aria-hidden="true" />
-            Cooking time:
-          </h2>
+          <section class="preference-section">
+            <h2>
+              <img class="section-icon" src="/icons/world.svg" alt="" aria-hidden="true" />
+              Cuisine
+            </h2>
 
-          <div class="time-options">
-            @for (option of cookingTimes; track option.label) {
-              <div class="time-option">
+            <div class="tag-options">
+              @for (option of cuisines; track option) {
                 <button
                   type="button"
-                  [class.is-selected]="cookingTime() === option.label"
-                  [attr.aria-pressed]="cookingTime() === option.label"
-                  (click)="selectCookingTime(option.label)"
+                  [class.is-selected]="cuisine() === option"
+                  [attr.aria-pressed]="cuisine() === option"
+                  (click)="selectCuisine(option)"
                 >
-                  {{ option.label }}
+                  {{ option }}
                 </button>
-                <span>{{ option.description }}</span>
-              </div>
-            }
+              }
+            </div>
+          </section>
+
+          <section class="preference-section">
+            <h2>
+              <img class="section-icon" src="/icons/fork-spoon.svg" alt="" aria-hidden="true" />
+              Diet preferences
+            </h2>
+
+            <div class="tag-options">
+              @for (option of diets; track option) {
+                <button
+                  type="button"
+                  [class.is-selected]="diet() === option"
+                  [attr.aria-pressed]="diet() === option"
+                  (click)="selectDiet(option)"
+                >
+                  {{ option }}
+                </button>
+              }
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <button class="generate-button" type="button" (click)="generateRecipe()">
+        Generate a recipe
+      </button>
+    </main>
+
+    @if (isErrorPopupOpen()) {
+      <div class="error-popup-backdrop" (click)="closeErrorPopup()">
+        <section
+          class="error-popup"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="recipe-error-title"
+          aria-describedby="recipe-error-description"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="error-popup-topbar">
+            <button
+              class="error-popup-close"
+              type="button"
+              aria-label="Close error message"
+              (click)="closeErrorPopup()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4 20 20M20 4 4 20" />
+              </svg>
+            </button>
           </div>
-        </section>
 
-        <section class="preference-section">
-          <h2>
-            <img class="section-icon" src="/icons/world.svg" alt="" aria-hidden="true" />
-            Cuisine
-          </h2>
+          <div class="error-popup-content">
+            <div class="error-popup-copy">
+              <h2 id="recipe-error-title">Ups! Not quite enough...</h2>
+              <p id="recipe-error-description">
+                It looks like some ingredient quantities aren’t sufficient for your selected
+                servings. Please add or adjust quantities and try again.
+              </p>
+            </div>
 
-          <div class="tag-options">
-            @for (option of cuisines; track option) {
-              <button
-                type="button"
-                [class.is-selected]="cuisine() === option"
-                [attr.aria-pressed]="cuisine() === option"
-                (click)="selectCuisine(option)"
-              >
-                {{ option }}
-              </button>
-            }
-          </div>
-        </section>
-
-        <section class="preference-section">
-          <h2>
-            <img class="section-icon" src="/icons/fork-spoon.svg" alt="" aria-hidden="true" />
-            Diet preferences
-          </h2>
-
-          <div class="tag-options">
-            @for (option of diets; track option) {
-              <button
-                type="button"
-                [class.is-selected]="diet() === option"
-                [attr.aria-pressed]="diet() === option"
-                (click)="selectDiet(option)"
-              >
-                {{ option }}
-              </button>
-            }
+            <a class="error-popup-action" routerLink="/generate-recipe" (click)="closeErrorPopup()">
+              <span>Go back to ingredients</span>
+              <svg viewBox="0 0 24 20" aria-hidden="true">
+                <path d="M1 10h21M14 2l8 8-8 8" />
+              </svg>
+            </a>
           </div>
         </section>
       </div>
-    </section>
-
-    <button class="generate-button" type="button" (click)="generateRecipe()">
-      Generate a recipe
-    </button>
-  </main>
-
-  @if (isErrorPopupOpen()) {
-    <div class="error-popup-backdrop" (click)="closeErrorPopup()">
-      <section
-        class="error-popup"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="recipe-error-title"
-        aria-describedby="recipe-error-description"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="error-popup-topbar">
-          <button
-            class="error-popup-close"
-            type="button"
-            aria-label="Close error message"
-            (click)="closeErrorPopup()"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 4 20 20M20 4 4 20" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="error-popup-content">
-          <div class="error-popup-copy">
-            <h2 id="recipe-error-title">Ups! Not quite enough...</h2>
-            <p id="recipe-error-description">
-              It looks like some ingredient quantities aren’t sufficient for your selected servings.
-              Please add or adjust quantities and try again.
-            </p>
-          </div>
-
-          <a class="error-popup-action" routerLink="/generate-recipe" (click)="closeErrorPopup()">
-            <span>Go back to ingredients</span>
-            <svg viewBox="0 0 24 20" aria-hidden="true">
-              <path d="M1 10h21M14 2l8 8-8 8" />
-            </svg>
-          </a>
-        </div>
-      </section>
-    </div>
-  }
-</div>
+    }
+  </div>
+}

@@ -1,0 +1,236 @@
+:host {
+  display: block;
+}
+
+.loading-page {
+  --olive-green: #396039;
+  --cream: #faf0e6;
+  --loader-green: #c4d0c4;
+
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  color: var(--cream);
+  background: var(--olive-green);
+}
+
+.loading-header {
+  display: flex;
+  width: 100%;
+  height: 88px;
+  align-items: flex-start;
+  padding: 40px 40px 0 68px;
+}
+
+.loading-logo {
+  display: block;
+  width: 142px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.loading-main {
+  position: absolute;
+  top: clamp(180px, 33.3svh, 341px);
+  left: 50%;
+  display: flex;
+  width: min(calc(100% - 32px), 520px);
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  transform: translateX(-50%);
+}
+
+.loader-card {
+  position: relative;
+  display: grid;
+  width: 253px;
+  height: 309px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  background: var(--loader-green);
+  border-radius: 20px;
+}
+
+.spinner {
+  position: absolute;
+  top: 61px;
+  left: 50%;
+  width: 136px;
+  height: 136px;
+  border: 3px solid rgb(57 96 57 / 22%);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  animation: spinner-rotate 2.4s linear infinite;
+}
+
+.spinner-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--olive-green);
+  border: 4px solid var(--loader-green);
+  border-radius: 50%;
+}
+
+.spinner-dot--one {
+  top: -10px;
+  left: 57px;
+}
+
+.spinner-dot--two {
+  right: 0;
+  bottom: 11px;
+}
+
+.spinner-dot--three {
+  bottom: 11px;
+  left: 0;
+}
+
+.dish-icon {
+  position: relative;
+  z-index: 1;
+  width: 124px;
+  height: 92px;
+  margin-top: 36px;
+  fill: none;
+  stroke: var(--olive-green);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+}
+
+.steam {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: steam-rise 1.8s ease-in-out infinite;
+}
+
+.steam--right {
+  animation-delay: 300ms;
+}
+
+.loading-label {
+  display: flex;
+  min-height: 55px;
+  margin: 0;
+  align-items: baseline;
+  justify-content: center;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: clamp(36px, 3.34vw, 48px);
+  font-weight: 700;
+  line-height: 55px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.loading-dots {
+  display: inline-flex;
+  width: 0.83em;
+
+  span {
+    flex: 0 0 0.28em;
+  }
+
+  span:nth-child(1) {
+    animation: first-dot 2.4s steps(1, end) infinite;
+  }
+
+  span:nth-child(2) {
+    animation: second-dot 2.4s steps(1, end) infinite;
+  }
+
+  span:nth-child(3) {
+    animation: third-dot 2.4s steps(1, end) infinite;
+  }
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@keyframes steam-rise {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(4px) scaleY(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px) scaleY(1.08);
+  }
+}
+
+@keyframes first-dot {
+  0%,
+  25%,
+  62.5%,
+  100% {
+    opacity: 1;
+  }
+
+  37.5%,
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes second-dot {
+  0%,
+  12.5%,
+  75%,
+  100% {
+    opacity: 1;
+  }
+
+  25%,
+  62.5% {
+    opacity: 0;
+  }
+}
+
+@keyframes third-dot {
+  0%,
+  87.5%,
+  100% {
+    opacity: 1;
+  }
+
+  12.5%,
+  75% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .loading-header {
+    height: 72px;
+    padding: 24px;
+  }
+
+  .loading-main {
+    top: max(136px, 24svh);
+  }
+
+  .loader-card {
+    width: 220px;
+    height: 269px;
+  }
+
+  .loading-label {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .steam,
+  .loading-dots span {
+    animation: none;
+  }
+}

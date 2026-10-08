@@ -1,10 +1,11 @@
 import { Component, HostListener, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 import { RecipeDraft } from '../../services/recipe-draft';
 
 @Component({
   selector: 'app-preferences',
-  imports: [RouterLink],
+  imports: [RouterLink, LoadingScreen],
   templateUrl: './preferences.html',
   styleUrl: './preferences.scss',
 })
@@ -28,6 +29,7 @@ export class Preferences {
   protected readonly cuisines = ['German', 'Italian', 'Indian', 'Japanese', 'Gourmet', 'Fusion'];
   protected readonly diets = ['Vegetarian', 'Vegan', 'Keto', 'No preferences'];
   protected readonly isErrorPopupOpen = signal(false);
+  protected readonly isGenerating = signal(false);
 
   protected changePortions(amount: number): void {
     this.portions.update((value) => Math.min(20, Math.max(1, value + amount)));
@@ -56,6 +58,7 @@ export class Preferences {
     }
 
     this.isErrorPopupOpen.set(false);
+    this.isGenerating.set(true);
   }
 
   protected closeErrorPopup(): void {
