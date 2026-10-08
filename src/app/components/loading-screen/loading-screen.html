@@ -5,20 +5,36 @@
 
   <main class="loading-main">
     <div class="loader-card" aria-hidden="true">
-      <div class="spinner">
-        <span class="spinner-dot spinner-dot--one"></span>
-        <span class="spinner-dot spinner-dot--two"></span>
-        <span class="spinner-dot spinner-dot--three"></span>
-      </div>
+      @if (!videoFailed()) {
+        <video
+          class="loader-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          (error)="useFallbackAnimation()"
+        >
+          <source src="/images/spinner/recipe-loading.webm" type="video/webm; codecs=vp9" />
+        </video>
+      }
 
-      <svg class="dish-icon" viewBox="0 0 124 92" aria-hidden="true">
-        <path class="steam steam--left" d="M44 24c-8-8 7-12 0-21" />
-        <path class="steam steam--right" d="M79 24c8-8-7-12 0-21" />
-        <path d="M10 68h104" />
-        <path d="M19 66c2-25 19-40 43-40s41 15 43 40" />
-        <path d="M3 77h118" />
-        <path d="M43 88h38" />
-      </svg>
+      <div class="css-fallback" [class.css-fallback--hidden]="!videoFailed()">
+        <div class="spinner">
+          <span class="spinner-dot spinner-dot--one"></span>
+          <span class="spinner-dot spinner-dot--two"></span>
+          <span class="spinner-dot spinner-dot--three"></span>
+        </div>
+
+        <svg class="dish-icon" viewBox="0 0 124 92" aria-hidden="true">
+          <path class="steam steam--left" d="M44 24c-8-8 7-12 0-21" />
+          <path class="steam steam--right" d="M79 24c8-8-7-12 0-21" />
+          <path d="M10 68h104" />
+          <path d="M19 66c2-25 19-40 43-40s41 15 43 40" />
+          <path d="M3 77h118" />
+          <path d="M43 88h38" />
+        </svg>
+      </div>
     </div>
 
     <p class="loading-label" aria-hidden="true">

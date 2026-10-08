@@ -53,6 +53,28 @@
   border-radius: 20px;
 }
 
+.loader-video {
+  position: absolute;
+  top: -12px;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--loader-green);
+}
+
+.css-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.css-fallback--hidden {
+  display: none;
+}
+
 .spinner {
   position: absolute;
   top: 61px;
@@ -228,6 +250,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .loader-video {
+    display: none;
+  }
+
+  .css-fallback--hidden {
+    display: grid;
+  }
+
   .spinner,
   .steam,
   .loading-dots span {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 
 @Component({
   selector: 'app-loading-screen',
@@ -8,4 +8,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class LoadingScreen {
   readonly message = input('Generating recipe');
+  protected readonly videoFailed = signal(false);
+
+  protected useFallbackAnimation(): void {
+    this.videoFailed.set(true);
+  }
 }
