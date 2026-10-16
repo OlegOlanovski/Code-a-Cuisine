@@ -1,0 +1,23 @@
+<main>
+    <h1>Cookbook</h1>
+
+    @if (isLoading()) {
+    <p>Loading recipes...</p>
+    } @else if (errorMessage()) {
+    <p>{{ errorMessage() }}</p>
+    } @else if (recipes().length === 0) {
+    <p>No recipes found.</p>
+    } @else {
+    <section>
+        @for (recipe of recipes(); track recipe.id) {
+        <article>
+            <h2>{{ recipe.name }}</h2>
+            <p>Cuisine: {{ recipe.cuisine }}</p>
+            <p>Cooking time: {{ recipe.cookingTime }} minutes</p>
+            <p>Servings: {{ recipe.servings }}</p>
+            <p>Likes: {{ recipe.likes }}</p>
+        </article>
+        }
+    </section>
+    }
+</main>

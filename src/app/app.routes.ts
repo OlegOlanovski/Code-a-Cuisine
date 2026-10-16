@@ -18,6 +18,11 @@ export const routes: Routes = [
       import('./pages/preferences/preferences').then((component) => component.Preferences),
   },
   {
+    path: 'cookbook',
+    loadComponent: () =>
+      import('./pages/cookbook/cookbook').then((component) => component.Cookbook),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

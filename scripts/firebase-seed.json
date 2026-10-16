@@ -1,0 +1,55 @@
+{
+  "recipes": {
+    "test-pasta": {
+      "name": "Tomato Pasta",
+      "cuisine": "italian",
+      "diet": "vegetarian",
+      "timeCategory": "quick",
+      "cookingTime": 20,
+      "servings": 2,
+      "likes": 0,
+      "yourIngredients": [
+        {
+          "amount": 200,
+          "unit": "g",
+          "name": "Pasta"
+        },
+        {
+          "amount": 2,
+          "unit": "piece",
+          "name": "Tomatoes"
+        }
+      ],
+      "extraIngredients": [
+        {
+          "amount": 1,
+          "unit": "tbsp",
+          "name": "Olive oil"
+        }
+      ],
+      "directions": [
+        {
+          "step": 1,
+          "title": "Cook the pasta",
+          "chef": 1,
+          "parallel": false,
+          "waitMinutes": null,
+          "description": "Cook the pasta according to the package instructions."
+        }
+      ],
+      "nutritionPerServing": {
+        "energy": 450,
+        "protein": 14,
+        "carbs": 72,
+        "fat": 10
+      },
+      "nutritionTotal": {
+        "energy": 900,
+        "protein": 28,
+        "carbs": 144,
+        "fat": 20
+      },
+      "createdAt": 1792108800000
+    }
+  }
+}
