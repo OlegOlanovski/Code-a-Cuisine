@@ -23,6 +23,11 @@ export const routes: Routes = [
       import('./pages/cookbook/cookbook').then((component) => component.Cookbook),
   },
   {
+    path: 'recipe/:id',
+    loadComponent: () =>
+      import('./pages/recipe-detail/recipe-detail').then((component) => component.RecipeDetail),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

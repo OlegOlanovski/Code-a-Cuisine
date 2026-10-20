@@ -1,0 +1,65 @@
+<main>
+    <a routerLink="/cookbook">← Back to cookbook</a>
+
+    @if (isLoading()) {
+    <p>Loading recipe...</p>
+    } @else if (errorMessage()) {
+    <p>{{ errorMessage() }}</p>
+    } @else if (recipe(); as recipe) {
+    <article>
+        <h1>{{ recipe.name }}</h1>
+
+        <p>Cuisine: {{ recipe.cuisine }}</p>
+        <p>Cooking time: {{ recipe.cookingTime }} minutes</p>
+        <p>Servings: {{ recipe.servings }}</p>
+        <p>Likes: {{ recipe.likes }}</p>
+
+        <h2>Your ingredients</h2>
+
+        <ul>
+            @for (ingredient of recipe.yourIngredients; track $index) {
+            <li>
+                {{ ingredient.amount }} {{ ingredient.unit }}
+                {{ ingredient.name }}
+            </li>
+            }
+        </ul>
+
+        <h2>Extra ingredients</h2>
+
+        <ul>
+            @for (ingredient of recipe.extraIngredients; track $index) {
+            <li>
+                {{ ingredient.amount }} {{ ingredient.unit }}
+                {{ ingredient.name }}
+            </li>
+            }
+        </ul>
+
+        <h2>Directions</h2>
+
+        <ol>
+            @for (direction of recipe.directions; track direction.step) {
+            <li>
+                <h3>{{ direction.title }}</h3>
+                <p>{{ direction.description }}</p>
+                <p>Chef: {{ direction.chef }}</p>
+
+                @if (direction.waitMinutes !== null) {
+                <p>Waiting time: {{ direction.waitMinutes }} minutes</p>
+                }
+            </li>
+            }
+        </ol>
+
+        <h2>Nutrition per serving</h2>
+
+        <ul>
+            <li>Energy: {{ recipe.nutritionPerServing.energy }} kcal</li>
+            <li>Protein: {{ recipe.nutritionPerServing.protein }} g</li>
+            <li>Carbs: {{ recipe.nutritionPerServing.carbs }} g</li>
+            <li>Fat: {{ recipe.nutritionPerServing.fat }} g</li>
+        </ul>
+    </article>
+    }
+</main>

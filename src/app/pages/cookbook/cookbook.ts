@@ -1,9 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Recipe } from '../../models/recipe.model';
 import { Recipes } from '../../services/recipes';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-cookbook',
+  imports: [RouterLink],
   templateUrl: './cookbook.html',
   styleUrl: './cookbook.scss',
 })
