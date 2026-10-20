@@ -15,9 +15,18 @@
             <p>Cuisine: {{ recipe.cuisine }}</p>
             <p>Cooking time: {{ recipe.cookingTime }} minutes</p>
             <p>Servings: {{ recipe.servings }}</p>
-            <p>Likes: {{ recipe.likes }}</p>
+            <button type="button" [disabled]="likingRecipeId() === recipe.id" (click)="likeRecipe(recipe)">
+                @if (likingRecipeId() === recipe.id) {
+                Saving...
+                } @else {
+                Like ({{ recipe.likes }})
+                }
+            </button>
         </article>
         }
     </section>
+    }
+    @if (likeErrorMessage()) {
+    <p>{{ likeErrorMessage() }}</p>
     }
 </main>
