@@ -33,6 +33,7 @@ export class Preferences {
   protected readonly diets = ['Vegetarian', 'Vegan', 'Keto', 'No preferences'];
   protected readonly isErrorPopupOpen = signal(false);
   protected readonly isGenerating = signal(false);
+  protected readonly generationErrorMessage = signal<string | null>(null);
 
   protected changePortions(amount: number): void {
     this.portions.update((value) => Math.min(12, Math.max(1, value + amount)));
@@ -56,6 +57,7 @@ export class Preferences {
 
   protected generateRecipe(): void {
     if (!this.hasValidRecipeRequest()) {
+      this.generationErrorMessage.set(null);
       this.isErrorPopupOpen.set(true);
       return;
     }
@@ -66,6 +68,7 @@ export class Preferences {
 
     const diet = (this.diet() === 'No preferences' ? 'none' : this.diet().toLowerCase()) as Diet;
 
+    this.generationErrorMessage.set(null);
     this.isErrorPopupOpen.set(false);
     this.isGenerating.set(true);
 
@@ -84,6 +87,14 @@ export class Preferences {
         },
         error: (error) => {
           console.error('Recipe generation failed:', error);
+
+          const details = error?.error?.details;
+          const message =
+            error?.error?.message ??
+            (Array.isArray(details) ? details.join(' ') : null) ??
+            'We could not generate recipes. Please check that n8n is running and try again.';
+
+          this.generationErrorMessage.set(message);
           this.isGenerating.set(false);
         },
       });

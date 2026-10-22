@@ -114,6 +114,14 @@
       <button class="generate-button" type="button" (click)="generateRecipe()">
         Generate a recipe
       </button>
+
+      @if (generationErrorMessage()) {
+        <section class="generation-error" role="alert">
+          <p>{{ generationErrorMessage() }}</p>
+
+          <button type="button" (click)="generateRecipe()">Try again</button>
+        </section>
+      }
     </main>
 
     @if (isErrorPopupOpen()) {
