@@ -1,8 +1,9 @@
 import { Component, HostListener, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 import { RecipeDraft } from '../../services/recipe-draft';
-
+import { Cuisine, Diet, TimeCategory } from '../../models/recipe.model';
+import { RecipeGenerator } from '../../services/recipe-generator';
 @Component({
   selector: 'app-preferences',
   imports: [RouterLink, LoadingScreen],
@@ -13,6 +14,8 @@ export class Preferences {
   private readonly minimumIngredientCount = 2;
   private readonly minimumAmountPerPortion = 150;
   private readonly recipeDraft = inject(RecipeDraft);
+  private readonly recipeGenerator = inject(RecipeGenerator);
+  private readonly router = inject(Router);
 
   protected readonly portions = this.recipeDraft.portions;
   protected readonly cooks = this.recipeDraft.cooks;
@@ -57,8 +60,33 @@ export class Preferences {
       return;
     }
 
+    const timeCategory = (
+      this.cookingTime() === 'Complex' ? 'elaborate' : this.cookingTime().toLowerCase()
+    ) as TimeCategory;
+
+    const diet = (this.diet() === 'No preferences' ? 'none' : this.diet().toLowerCase()) as Diet;
+
     this.isErrorPopupOpen.set(false);
     this.isGenerating.set(true);
+
+    this.recipeGenerator
+      .generate({
+        ingredients: this.recipeDraft.ingredients(),
+        servings: this.portions(),
+        timeCategory,
+        cuisine: this.cuisine().toLowerCase() as Cuisine,
+        diet,
+        helperCount: this.cooks(),
+      })
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/cookbook']);
+        },
+        error: (error) => {
+          console.error('Recipe generation failed:', error);
+          this.isGenerating.set(false);
+        },
+      });
   }
 
   protected closeErrorPopup(): void {
