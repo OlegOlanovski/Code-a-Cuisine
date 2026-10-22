@@ -35,11 +35,11 @@ export class Preferences {
   protected readonly isGenerating = signal(false);
 
   protected changePortions(amount: number): void {
-    this.portions.update((value) => Math.min(20, Math.max(1, value + amount)));
+    this.portions.update((value) => Math.min(12, Math.max(1, value + amount)));
   }
 
   protected changeCooks(amount: number): void {
-    this.cooks.update((value) => Math.min(20, Math.max(1, value + amount)));
+    this.cooks.update((value) => Math.min(4, Math.max(1, value + amount)));
   }
 
   protected selectCookingTime(value: string): void {
