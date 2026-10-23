@@ -243,7 +243,6 @@
     background: var(--middle-green);
   }
 }
-
 .error-popup-backdrop {
   position: fixed;
   z-index: 1000;
@@ -359,6 +358,22 @@
     stroke-linejoin: round;
     stroke-width: 2;
   }
+}
+
+.generation-error-popup {
+  height: auto;
+  min-height: 345px;
+
+  .error-popup-content,
+  .error-popup-copy,
+  .error-popup-copy p {
+    height: auto;
+  }
+}
+
+.generation-error-action {
+  background: transparent;
+  border: 0;
 }
 
 @keyframes error-popup-move-in {

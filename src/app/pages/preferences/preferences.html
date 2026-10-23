@@ -114,14 +114,6 @@
       <button class="generate-button" type="button" (click)="generateRecipe()">
         Generate a recipe
       </button>
-
-      @if (generationErrorMessage()) {
-        <section class="generation-error" role="alert">
-          <p>{{ generationErrorMessage() }}</p>
-
-          <button type="button" (click)="generateRecipe()">Try again</button>
-        </section>
-      }
     </main>
 
     @if (isErrorPopupOpen()) {
@@ -162,6 +154,50 @@
                 <path d="M1 10h21M14 2l8 8-8 8" />
               </svg>
             </a>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (generationErrorMessage()) {
+      <div class="error-popup-backdrop" (click)="closeGenerationError()">
+        <section
+          class="error-popup generation-error-popup"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="generation-error-title"
+          aria-describedby="generation-error-description"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="error-popup-topbar">
+            <button
+              class="error-popup-close"
+              type="button"
+              aria-label="Close generation error"
+              (click)="closeGenerationError()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4 20 20M20 4 4 20" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="error-popup-content">
+            <div class="error-popup-copy">
+              <h2 id="generation-error-title">Recipe generation failed</h2>
+              <p id="generation-error-description">{{ generationErrorMessage() }}</p>
+            </div>
+
+            <button
+              class="error-popup-action generation-error-action"
+              type="button"
+              (click)="generateRecipe()"
+            >
+              <span>Try again</span>
+              <svg viewBox="0 0 24 20" aria-hidden="true">
+                <path d="M1 10h21M14 2l8 8-8 8" />
+              </svg>
+            </button>
           </div>
         </section>
       </div>

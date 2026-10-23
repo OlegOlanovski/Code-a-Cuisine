@@ -104,9 +104,14 @@ export class Preferences {
     this.isErrorPopupOpen.set(false);
   }
 
+  protected closeGenerationError(): void {
+    this.generationErrorMessage.set(null);
+  }
+
   @HostListener('document:keydown.escape')
   protected closeErrorPopupOnEscape(): void {
     this.closeErrorPopup();
+    this.closeGenerationError();
   }
 
   private hasValidRecipeRequest(): boolean {
