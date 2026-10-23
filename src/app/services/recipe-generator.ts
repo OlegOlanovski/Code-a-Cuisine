@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Cuisine, Diet, Recipe, TimeCategory } from '../models/recipe.model';
@@ -23,6 +23,8 @@ export interface GenerateRecipeResponse {
 })
 export class RecipeGenerator {
   private readonly http = inject(HttpClient);
+
+  readonly results = signal<Recipe[]>([]);
 
   generate(request: GenerateRecipeRequest): Observable<GenerateRecipeResponse> {
     return this.http.post<GenerateRecipeResponse>(environment.n8nWebhookUrl, request);

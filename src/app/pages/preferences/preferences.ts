@@ -82,9 +82,10 @@ export class Preferences {
         helperCount: this.cooks(),
       })
       .subscribe({
-        next: () => {
+        next: (response) => {
+          this.recipeGenerator.results.set(response.recipes);
           this.recipeDraft.reset();
-          this.router.navigate(['/cookbook']);
+          this.router.navigate(['/results']);
         },
         error: (error) => {
           console.error('Recipe generation failed:', error);

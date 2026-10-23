@@ -23,6 +23,10 @@ export const routes: Routes = [
       import('./pages/cookbook/cookbook').then((component) => component.Cookbook),
   },
   {
+    path: 'results',
+    loadComponent: () => import('./pages/results/results').then((component) => component.Results),
+  },
+  {
     path: 'recipe/:id',
     loadComponent: () =>
       import('./pages/recipe-detail/recipe-detail').then((component) => component.RecipeDetail),

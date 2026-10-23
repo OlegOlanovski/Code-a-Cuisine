@@ -1,0 +1,67 @@
+<div class="results-page">
+  <header class="results-header">
+    <a routerLink="/" aria-label="Code à Cuisine home">
+      <img src="/images/logo.png" alt="Code à Cuisine" />
+    </a>
+  </header>
+
+  @if (recipes().length === 0) {
+    <main class="results-empty">
+      <h1>No generated recipes yet</h1>
+      <p>Start with your ingredients and let our AI prepare three ideas for you.</p>
+      <a routerLink="/generate-recipe">Generate recipes</a>
+    </main>
+  } @else {
+    <main class="results-main">
+      <section class="results-intro" aria-labelledby="results-title">
+        <div class="results-copy">
+          <h1 id="results-title">
+            <span class="desktop-title">The recipe results</span>
+            <span class="mobile-title">Generated recipes</span>
+          </h1>
+
+          <p>
+            We took what you have and let our AI do the thinking. Here are 3 easy recipes you can
+            make right now!
+          </p>
+
+          <div class="results-tags" aria-label="Selected recipe preferences">
+            <span>{{ cuisine() }}</span>
+            <span>{{ cookingTime() }}</span>
+          </div>
+        </div>
+
+        <img class="results-hero" src="/images/results/robo.png" alt="" aria-hidden="true" />
+      </section>
+
+      <section class="results-cards" aria-label="Generated recipes">
+        @for (recipe of recipes(); track recipe.id; let recipeIndex = $index) {
+          <article class="recipe-card">
+            <div class="recipe-card-content">
+              <p class="recipe-card-label">
+                <img src="/images/results/cloche.svg" alt="" aria-hidden="true" />
+                <span>Recipe {{ recipeIndex + 1 }}</span>
+              </p>
+
+              <h2>{{ recipe.name }}</h2>
+
+              <p class="recipe-card-time">
+                <img src="/images/results/schedule.svg" alt="" aria-hidden="true" />
+                <span>Cooking time: {{ recipe.cookingTime }}min</span>
+              </p>
+            </div>
+
+            <a class="recipe-card-view" [routerLink]="['/recipe', recipe.id]">View</a>
+          </article>
+        }
+      </section>
+
+      <div class="results-footer">
+        <a class="generate-again-link" routerLink="/generate-recipe">
+          <span>Generate new recipe</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </main>
+  }
+</div>
