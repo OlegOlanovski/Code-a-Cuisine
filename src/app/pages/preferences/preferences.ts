@@ -83,6 +83,7 @@ export class Preferences {
       })
       .subscribe({
         next: () => {
+          this.recipeDraft.reset();
           this.router.navigate(['/cookbook']);
         },
         error: (error) => {
