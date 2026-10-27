@@ -1,65 +1,187 @@
-<main>
-    <a routerLink="/cookbook">← Back to cookbook</a>
+<div class="recipe-page">
+  <header class="recipe-header">
+    <a class="recipe-logo" routerLink="/" aria-label="Code à Cuisine home">
+      <img src="/images/recipe-detail/logo-dark.png" alt="Code à Cuisine" />
+    </a>
 
-    @if (isLoading()) {
-    <p>Loading recipe...</p>
-    } @else if (errorMessage()) {
-    <p>{{ errorMessage() }}</p>
-    } @else if (recipe(); as recipe) {
-    <article>
-        <h1>{{ recipe.name }}</h1>
+    <a class="back-link" routerLink="/results">
+      <span aria-hidden="true">←</span>
+      <span>Recipe results</span>
+    </a>
+  </header>
 
-        <p>Cuisine: {{ recipe.cuisine }}</p>
-        <p>Cooking time: {{ recipe.cookingTime }} minutes</p>
-        <p>Servings: {{ recipe.servings }}</p>
-        <p>Likes: {{ recipe.likes }}</p>
+  @if (isLoading()) {
+    <main class="recipe-status" role="status">Loading recipe…</main>
+  } @else if (errorMessage()) {
+    <main class="recipe-status recipe-status--error">
+      <p>{{ errorMessage() }}</p>
+      <a routerLink="/results">Back to recipe results</a>
+    </main>
+  } @else if (recipe(); as recipe) {
+    <main class="recipe-main">
+      <article class="recipe-card">
+        <section class="recipe-summary" aria-labelledby="recipe-title">
+          <div class="recipe-summary-main">
+            <p class="recipe-time">
+              <img src="/images/recipe-detail/schedule.svg" alt="" aria-hidden="true" />
+              <span>Cooking time: {{ recipe.cookingTime }}min</span>
+            </p>
 
-        <h2>Your ingredients</h2>
+            <h1 id="recipe-title">{{ recipe.name }}</h1>
 
-        <ul>
-            @for (ingredient of recipe.yourIngredients; track $index) {
-            <li>
-                {{ ingredient.amount }} {{ ingredient.unit }}
-                {{ ingredient.name }}
-            </li>
-            }
-        </ul>
+            <div class="recipe-chefs">
+              <span>Cooking person: {{ chefsUsed(recipe).length }}</span>
 
-        <h2>Extra ingredients</h2>
+              @for (chef of chefsUsed(recipe); track chef) {
+                <span class="chef-badge" [class]="'chef-badge chef-badge--' + chef">
+                  <img [src]="chefIcon(chef)" alt="" aria-hidden="true" />
+                  Chef {{ chef }}
+                </span>
+              }
+            </div>
+          </div>
 
-        <ul>
-            @for (ingredient of recipe.extraIngredients; track $index) {
-            <li>
-                {{ ingredient.amount }} {{ ingredient.unit }}
-                {{ ingredient.name }}
-            </li>
-            }
-        </ul>
+          <div class="recipe-summary-side">
+            <div class="recipe-tags">
+              <span>{{ dietLabel(recipe) }}</span>
+              <span>{{ timeCategoryLabel(recipe) }}</span>
+              <span class="likes-tag">
+                <img src="/images/recipe-detail/heart.svg" alt="" aria-hidden="true" />
+                {{ recipe.likes }}
+              </span>
+            </div>
 
-        <h2>Directions</h2>
+            <div class="nutrition">
+              <p>Nutritional information</p>
+              <dl>
+                <div>
+                  <dt>Energie</dt>
+                  <dd>{{ recipe.nutritionPerServing.energy }} kcal</dd>
+                </div>
+                <div>
+                  <dt>Protein</dt>
+                  <dd>{{ recipe.nutritionPerServing.protein }}g</dd>
+                </div>
+                <div>
+                  <dt>Fat</dt>
+                  <dd>{{ recipe.nutritionPerServing.fat }}g</dd>
+                </div>
+                <div>
+                  <dt>Carbs</dt>
+                  <dd>{{ recipe.nutritionPerServing.carbs }}g</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </section>
 
-        <ol>
-            @for (direction of recipe.directions; track direction.step) {
-            <li>
-                <h3>{{ direction.title }}</h3>
-                <p>{{ direction.description }}</p>
-                <p>Chef: {{ direction.chef }}</p>
+        <section class="recipe-section" aria-labelledby="ingredients-title">
+          <picture class="section-banner">
+            <source
+              media="(max-width: 600px)"
+              srcset="/images/recipe-detail/ingredients-mobile.png"
+            />
+            <img src="/images/recipe-detail/ingredients-banner.png" alt="" aria-hidden="true" />
+          </picture>
+          <h2 class="visually-hidden" id="ingredients-title">Ingredients</h2>
 
-                @if (direction.waitMinutes !== null) {
-                <p>Waiting time: {{ direction.waitMinutes }} minutes</p>
+          <div class="ingredients-grid">
+            <div class="ingredient-column">
+              <h3>Your ingredients</h3>
+              <ul>
+                @for (ingredient of recipe.yourIngredients; track $index) {
+                  <li>
+                    <span class="ingredient-amount">
+                      {{ ingredient.amount }}{{ displayUnit(ingredient.unit) }}
+                    </span>
+                    <span>{{ ingredient.name }}</span>
+                  </li>
                 }
-            </li>
+              </ul>
+            </div>
+
+            <div class="ingredient-column">
+              <h3>Extra ingredients</h3>
+              <ul>
+                @for (ingredient of recipe.extraIngredients; track $index) {
+                  <li>
+                    @if (ingredient.amount !== null) {
+                      <span class="ingredient-amount">
+                        {{ ingredient.amount }}{{ displayUnit(ingredient.unit) }}
+                      </span>
+                    }
+                    <span>{{ ingredient.name }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="recipe-section" aria-labelledby="directions-title">
+          <picture class="section-banner">
+            <source
+              media="(max-width: 600px)"
+              srcset="/images/recipe-detail/directions-mobile.png"
+            />
+            <img src="/images/recipe-detail/directions-banner.png" alt="" aria-hidden="true" />
+          </picture>
+          <h2 class="visually-hidden" id="directions-title">Directions</h2>
+
+          <div class="directions-grid">
+            @for (direction of recipe.directions; track direction.step) {
+              <article class="direction-step">
+                <div class="direction-heading">
+                  <span class="direction-number">{{ direction.step }}.</span>
+                  <h3>{{ direction.title }}</h3>
+                  <span class="chef-badge" [class]="'chef-badge chef-badge--' + direction.chef">
+                    <img [src]="chefIcon(direction.chef)" alt="" aria-hidden="true" />
+                    Chef {{ direction.chef }}
+                  </span>
+                </div>
+
+                <p>{{ direction.description }}</p>
+
+                @if (direction.waitMinutes !== null && direction.waitMinutes > 0) {
+                  <p class="waiting-time">Waiting time: {{ direction.waitMinutes }}min</p>
+                }
+              </article>
             }
-        </ol>
+          </div>
+        </section>
 
-        <h2>Nutrition per serving</h2>
+        <div class="recipe-like">
+          <p>
+            <strong>Just finished this meal?</strong>
+            Give it a heart, so that the others know this is delicious.
+          </p>
 
-        <ul>
-            <li>Energy: {{ recipe.nutritionPerServing.energy }} kcal</li>
-            <li>Protein: {{ recipe.nutritionPerServing.protein }} g</li>
-            <li>Carbs: {{ recipe.nutritionPerServing.carbs }} g</li>
-            <li>Fat: {{ recipe.nutritionPerServing.fat }} g</li>
-        </ul>
-    </article>
-    }
-</main>
+          <button
+            type="button"
+            [disabled]="liked() || isLiking()"
+            [attr.aria-label]="liked() ? 'Recipe liked' : 'Like this recipe'"
+            (click)="likeRecipe()"
+          >
+            <img [src]="heartIcon()" alt="" aria-hidden="true" />
+          </button>
+        </div>
+
+        @if (likeErrorMessage()) {
+          <p class="like-error" role="alert">{{ likeErrorMessage() }}</p>
+        }
+      </article>
+
+      <section class="cookbook-cta">
+        <p>Find inspiration for your next culinary adventure!</p>
+        <a routerLink="/cookbook">Cookbook</a>
+      </section>
+
+      <div class="recipe-footer">
+        <a routerLink="/generate-recipe">
+          <span>Generate new recipe</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </main>
+  }
+</div>
