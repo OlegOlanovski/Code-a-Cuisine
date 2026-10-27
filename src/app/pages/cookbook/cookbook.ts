@@ -1,7 +1,14 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Recipe } from '../../models/recipe.model';
 import { Recipes } from '../../services/recipes';
-import { RouterLink } from '@angular/router';
+
+interface CuisineCard {
+  name: string;
+  emoji: string;
+  image: string;
+  slug: string;
+}
 
 @Component({
   selector: 'app-cookbook',
@@ -12,45 +19,57 @@ import { RouterLink } from '@angular/router';
 export class Cookbook implements OnInit {
   private readonly recipesService = inject(Recipes);
 
-  protected readonly recipes = signal<Recipe[]>([]);
+  protected readonly mostLiked = signal<Recipe[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
-  protected readonly likeErrorMessage = signal('');
-  protected readonly likingRecipeId = signal<string | null>(null);
+
+  protected readonly cuisines: CuisineCard[] = [
+    {
+      name: 'Italian cuisine',
+      emoji: '🤌',
+      image: '/images/cookbook/italian.png',
+      slug: 'italian',
+    },
+    {
+      name: 'German cuisine',
+      emoji: '🥨',
+      image: '/images/cookbook/german.png',
+      slug: 'german',
+    },
+    {
+      name: 'Japanese cuisine',
+      emoji: '🥢',
+      image: '/images/cookbook/japanese.png',
+      slug: 'japanese',
+    },
+    {
+      name: 'Gourmet cuisine',
+      emoji: '✨',
+      image: '/images/cookbook/gourmet.png',
+      slug: 'gourmet',
+    },
+    {
+      name: 'Indian cuisine',
+      emoji: '🍛',
+      image: '/images/cookbook/indian.png',
+      slug: 'indian',
+    },
+    {
+      name: 'Fusion cuisine',
+      emoji: '🍡',
+      image: '/images/cookbook/fusion.png',
+      slug: 'fusion',
+    },
+  ];
 
   async ngOnInit(): Promise<void> {
     try {
-      const recipes = await this.recipesService.getAll();
-      this.recipes.set(recipes);
+      this.mostLiked.set(await this.recipesService.getMostLiked(3));
     } catch (error) {
       console.error(error);
       this.errorMessage.set('Could not load recipes.');
     } finally {
       this.isLoading.set(false);
-    }
-  }
-
-  protected async likeRecipe(recipe: Recipe): Promise<void> {
-    if (!recipe.id || this.likingRecipeId()) {
-      return;
-    }
-
-    this.likeErrorMessage.set('');
-    this.likingRecipeId.set(recipe.id);
-
-    try {
-      const likes = await this.recipesService.likeRecipe(recipe.id);
-
-      this.recipes.update((recipes) =>
-        recipes.map((currentRecipe) =>
-          currentRecipe.id === recipe.id ? { ...currentRecipe, likes } : currentRecipe,
-        ),
-      );
-    } catch (error) {
-      console.error(error);
-      this.likeErrorMessage.set('Could not save your like.');
-    } finally {
-      this.likingRecipeId.set(null);
     }
   }
 }

@@ -1,36 +1,78 @@
-<main>
-    <h1>Cookbook</h1>
+<div class="cookbook-page">
+  <header class="cookbook-header">
+    <a class="cookbook-logo" routerLink="/" aria-label="Code à Cuisine home">
+      <img src="/images/recipe-detail/logo-dark.png" alt="Code à Cuisine" />
+    </a>
 
-    @if (isLoading()) {
-    <p>Loading recipes...</p>
-    } @else if (errorMessage()) {
-    <p>{{ errorMessage() }}</p>
-    } @else if (recipes().length === 0) {
-    <p>No recipes found.</p>
-    } @else {
-    <section>
-        @for (recipe of recipes(); track recipe.id) {
-        <article>
-            <h2>
-                <a [routerLink]="['/recipe', recipe.id]">
-                    {{ recipe.name }}
-                </a>
-            </h2>
-            <p>Cuisine: {{ recipe.cuisine }}</p>
-            <p>Cooking time: {{ recipe.cookingTime }} minutes</p>
-            <p>Servings: {{ recipe.servings }}</p>
-            <button type="button" [disabled]="likingRecipeId() === recipe.id" (click)="likeRecipe(recipe)">
-                @if (likingRecipeId() === recipe.id) {
-                Saving...
-                } @else {
-                Like ({{ recipe.likes }})
-                }
-            </button>
-        </article>
+    <a class="back-link" routerLink="/">
+      <span aria-hidden="true">←</span>
+      <span>Back</span>
+    </a>
+  </header>
+
+  <main class="cookbook-main">
+    <section class="cookbook-hero">
+      <div class="cookbook-intro">
+        <h1>Cookbook</h1>
+        <p>
+          From quick bites to gourmet delights, explore them all in our ultimate cookbook and get
+          inspired for your next culinary adventure.
+        </p>
+      </div>
+
+      <div class="most-liked">
+        <h2>
+          <span>Most liked recipes</span>
+          <img src="/images/recipe-detail/heart.svg" alt="" aria-hidden="true" />
+        </h2>
+
+        @if (isLoading()) {
+          <p class="liked-status" role="status">Loading recipes…</p>
+        } @else if (errorMessage()) {
+          <p class="liked-status liked-status--error" role="alert">{{ errorMessage() }}</p>
+        } @else if (mostLiked().length === 0) {
+          <p class="liked-status">No recipes yet. Generate the first one!</p>
+        } @else {
+          <div class="most-liked-list">
+            @for (recipe of mostLiked(); track recipe.id) {
+              <a class="liked-card" [routerLink]="['/recipe', recipe.id]">
+                <p class="liked-card-meta">
+                  <span class="liked-card-time">
+                    <img src="/images/recipe-detail/schedule.svg" alt="" aria-hidden="true" />
+                    Cooking time: {{ recipe.cookingTime }}min
+                  </span>
+
+                  <span class="liked-card-likes">
+                    <img src="/images/recipe-detail/heart.svg" alt="" aria-hidden="true" />
+                    {{ recipe.likes }}
+                  </span>
+                </p>
+
+                <h3>{{ recipe.name }}</h3>
+              </a>
+            }
+          </div>
         }
+      </div>
     </section>
-    }
-    @if (likeErrorMessage()) {
-    <p>{{ likeErrorMessage() }}</p>
-    }
-</main>
+
+    <section class="cuisine-grid" aria-label="Recipe cuisines">
+      @for (cuisine of cuisines; track cuisine.slug) {
+        <article class="cuisine-card">
+          <h2>
+            {{ cuisine.name }}
+            <span aria-hidden="true">{{ cuisine.emoji }}</span>
+          </h2>
+          <img [src]="cuisine.image" [alt]="cuisine.name" />
+        </article>
+      }
+    </section>
+
+    <div class="cookbook-footer">
+      <a routerLink="/generate-recipe">
+        <span>Generate new recipe</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </main>
+</div>

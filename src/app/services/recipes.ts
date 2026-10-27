@@ -22,6 +22,12 @@ export class Recipes {
     return value ? { id, ...value } : null;
   }
 
+  async getMostLiked(limit = 3): Promise<Recipe[]> {
+    const recipes = await this.getAll();
+
+    return recipes.sort((first, second) => second.likes - first.likes).slice(0, limit);
+  }
+
   async likeRecipe(id: string): Promise<number> {
     if (!auth.currentUser) {
       await signInAnonymously(auth);
