@@ -17,7 +17,67 @@ export class GenerateRecipe {
   protected quantity: number | null = null;
   protected unit = 'gram';
   protected readonly units = ['piece', 'ml', 'gram'];
-  protected readonly ingredientSuggestions = ['Pasta', 'Pastrami', 'Passionsfrut'];
+  protected readonly ingredientSuggestions = [
+    'Apple',
+    'Asparagus',
+    'Avocado',
+    'Bacon',
+    'Beef',
+    'Broccoli',
+    'Cabbage',
+    'Carrot',
+    'Chicken',
+    'Dates',
+    'Dill',
+    'Duck',
+    'Egg',
+    'Eggplant',
+    'Emmental',
+    'Fennel',
+    'Feta',
+    'Flour',
+    'Garlic',
+    'Ginger',
+    'Grapes',
+    'Ham',
+    'Hazelnut',
+    'Honey',
+    'Iceberg lettuce',
+    'Jalapeno',
+    'Kale',
+    'Kiwi',
+    'Lamb',
+    'Lemon',
+    'Lentils',
+    'Mango',
+    'Milk',
+    'Mushrooms',
+    'Noodles',
+    'Nutmeg',
+    'Oats',
+    'Olive oil',
+    'Onion',
+    'Paprika',
+    'Pasta',
+    'Potato',
+    'Quinoa',
+    'Radish',
+    'Rice',
+    'Rosemary',
+    'Salmon',
+    'Spinach',
+    'Strawberry',
+    'Thyme',
+    'Tomato',
+    'Tuna',
+    'Udon noodles',
+    'Vanilla',
+    'Walnut',
+    'Watermelon',
+    'Xanthan gum',
+    'Yogurt',
+    'Zucchini',
+  ];
   protected isUnitMenuOpen = false;
   protected isIngredientMenuOpen = false;
   protected editingIngredientIndex: number | null = null;
@@ -30,9 +90,9 @@ export class GenerateRecipe {
       return [];
     }
 
-    return this.ingredientSuggestions.filter((suggestion) =>
-      suggestion.toLocaleLowerCase().startsWith(query),
-    );
+    return this.ingredientSuggestions
+      .filter((suggestion) => suggestion.toLocaleLowerCase().startsWith(query))
+      .slice(0, 3);
   }
 
   protected toggleUnitMenu(event: MouseEvent): void {
