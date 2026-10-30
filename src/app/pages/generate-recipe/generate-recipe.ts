@@ -13,6 +13,7 @@ export class GenerateRecipe {
   private readonly recipeDraft = inject(RecipeDraft);
 
   protected ingredientName = '';
+  protected ingredientError = '';
   protected quantity: number | null = null;
   protected unit = 'gram';
   protected readonly units = ['piece', 'ml', 'gram'];
@@ -48,6 +49,9 @@ export class GenerateRecipe {
 
   protected updateIngredientMenu(value: string): void {
     this.ingredientName = value;
+    this.ingredientError = this.hasOnlyEnglishCharacters(value)
+      ? ''
+      : 'Please enter the ingredient name in English.';
     this.isUnitMenuOpen = false;
     this.isIngredientMenuOpen = this.filteredIngredientSuggestions.length > 0;
   }
@@ -55,6 +59,7 @@ export class GenerateRecipe {
   protected selectIngredient(ingredient: string, event: MouseEvent): void {
     event.stopPropagation();
     this.ingredientName = ingredient;
+    this.ingredientError = '';
     this.isIngredientMenuOpen = false;
   }
 
@@ -66,6 +71,11 @@ export class GenerateRecipe {
 
   protected addIngredient(): void {
     const name = this.ingredientName.trim();
+
+    if (name && !this.hasOnlyEnglishCharacters(name)) {
+      this.ingredientError = 'Please enter the ingredient name in English.';
+      return;
+    }
 
     if (!name || this.quantity === null || this.quantity <= 0) {
       return;
@@ -86,6 +96,7 @@ export class GenerateRecipe {
     }
 
     this.ingredientName = '';
+    this.ingredientError = '';
     this.quantity = null;
     this.editingIngredientIndex = null;
     this.isIngredientMenuOpen = false;
@@ -99,6 +110,7 @@ export class GenerateRecipe {
     }
 
     this.ingredientName = ingredient.name;
+    this.ingredientError = '';
     this.quantity = ingredient.quantity;
     this.unit = ingredient.unit;
     this.editingIngredientIndex = index;
@@ -112,6 +124,7 @@ export class GenerateRecipe {
 
     if (this.editingIngredientIndex !== null) {
       this.ingredientName = '';
+      this.ingredientError = '';
       this.quantity = null;
       this.editingIngredientIndex = null;
     }
@@ -127,5 +140,10 @@ export class GenerateRecipe {
     }
 
     return unit;
+  }
+
+  private hasOnlyEnglishCharacters(value: string): boolean {
+    const name = value.trim();
+    return !name || /^[A-Za-z][A-Za-z '\u2019-]*$/.test(name);
   }
 }

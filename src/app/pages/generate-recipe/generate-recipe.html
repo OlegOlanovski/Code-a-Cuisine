@@ -26,15 +26,24 @@
               type="text"
               name="ingredientName"
               [ngModel]="ingredientName"
-              placeholder="e.g. tomato"
+              lang="en"
+              pattern="[A-Za-z][A-Za-z '\u2019-]*"
               autocomplete="off"
               aria-autocomplete="list"
               [attr.aria-expanded]="isIngredientMenuOpen"
+              [attr.aria-invalid]="ingredientError ? 'true' : null"
+              [attr.aria-describedby]="ingredientError ? 'ingredient-language-error' : null"
               (ngModelChange)="updateIngredientMenu($event)"
               (focus)="updateIngredientMenu(ingredientName)"
               (click)="$event.stopPropagation()"
               required
             />
+
+            @if (ingredientError) {
+              <p id="ingredient-language-error" class="field-error" role="alert">
+                {{ ingredientError }}
+              </p>
+            }
 
             @if (isIngredientMenuOpen) {
               <ul class="ingredient-suggestions" role="listbox">
@@ -107,9 +116,7 @@
       <section class="ingredients-card" aria-labelledby="ingredients-title">
         <h2 id="ingredients-title">List of your Ingredients</h2>
 
-        @if (ingredients().length === 0) {
-          <p class="empty-list">Your ingredients will appear here.</p>
-        } @else {
+        @if (ingredients().length > 0) {
           <ul>
             @for (ingredient of ingredients(); track $index) {
               <li>

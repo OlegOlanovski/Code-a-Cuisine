@@ -138,6 +138,18 @@
   padding: 8px 12px;
 }
 
+.ingredient-field input[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px #a33b32;
+}
+
+.field-error {
+  margin: 4px 4px 0;
+  color: #8f2f28;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 17px;
+}
+
 .ingredient-card--autocomplete .ingredient-field input {
   background: var(--cream);
 }
