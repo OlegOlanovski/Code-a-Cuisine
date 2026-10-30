@@ -58,13 +58,13 @@
 
     <section class="cuisine-grid" aria-label="Recipe cuisines">
       @for (cuisine of cuisines; track cuisine.slug) {
-        <article class="cuisine-card">
+        <a class="cuisine-card" [routerLink]="['/cookbook', cuisine.slug]">
           <h2>
             {{ cuisine.name }}
             <span aria-hidden="true">{{ cuisine.emoji }}</span>
           </h2>
           <img [src]="cuisine.image" [alt]="cuisine.name" />
-        </article>
+        </a>
       }
     </section>
 

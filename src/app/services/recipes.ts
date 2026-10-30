@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { get, ref, runTransaction } from 'firebase/database';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, database } from '../firebase';
-import { Recipe } from '../models/recipe.model';
+import { Cuisine, Recipe } from '../models/recipe.model';
 
 @Injectable({
   providedIn: 'root',
@@ -26,6 +26,14 @@ export class Recipes {
     const recipes = await this.getAll();
 
     return recipes.sort((first, second) => second.likes - first.likes).slice(0, limit);
+  }
+
+  async getByCuisine(cuisine: Cuisine): Promise<Recipe[]> {
+    const recipes = await this.getAll();
+
+    return recipes
+      .filter((recipe) => recipe.cuisine === cuisine)
+      .sort((first, second) => second.createdAt - first.createdAt);
   }
 
   async likeRecipe(id: string): Promise<number> {

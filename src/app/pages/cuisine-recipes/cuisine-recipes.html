@@ -1,0 +1,104 @@
+<div class="cuisine-page">
+  <header class="cuisine-header">
+    <a class="cuisine-logo" routerLink="/" aria-label="Code à Cuisine home">
+      <img src="/images/recipe-detail/logo-dark.png" alt="Code à Cuisine" />
+    </a>
+
+    <a class="back-link" routerLink="/cookbook">
+      <span aria-hidden="true">←</span>
+      <span>Cookbook</span>
+    </a>
+  </header>
+
+  <main class="cuisine-main">
+    <div class="generate-row">
+      <a routerLink="/generate-recipe">Generate a recipe</a>
+    </div>
+
+    @if (cuisineInfo(); as info) {
+      <picture class="cuisine-hero">
+        <source media="(max-width: 600px)" [srcset]="info.mobileImage" />
+        <img [src]="info.desktopImage" [alt]="info.name" />
+      </picture>
+    }
+
+    @if (isLoading()) {
+      <p class="status" role="status">Loading recipes…</p>
+    } @else if (errorMessage()) {
+      <div class="status status--error" role="alert">
+        <p>{{ errorMessage() }}</p>
+        <a routerLink="/cookbook">Back to Cookbook</a>
+      </div>
+    } @else if (recipes().length === 0) {
+      <div class="status">
+        <p>No recipes in this cuisine yet.</p>
+        <a routerLink="/generate-recipe">Generate the first recipe</a>
+      </div>
+    } @else {
+      <ol class="recipe-list">
+        @for (recipe of pagedRecipes(); track recipe.id) {
+          <li class="recipe-item">
+            <span class="recipe-number">
+              {{ $index + 1 + (currentPage() - 1) * itemsPerPage }}.
+            </span>
+
+            <a class="recipe-main" [routerLink]="['/recipe', recipe.id]">
+              <span class="recipe-time">
+                <img src="/images/recipe-detail/schedule.svg" alt="" aria-hidden="true" />
+                Cooking time: {{ recipe.cookingTime }}min
+              </span>
+              <span class="recipe-title">{{ recipe.name }}</span>
+            </a>
+
+            <div class="recipe-tags">
+              @for (tag of displayTags(recipe); track tag) {
+                <span class="recipe-tag">{{ tag }}</span>
+              }
+              <span class="recipe-likes">
+                <img src="/images/recipe-detail/heart.svg" alt="" aria-hidden="true" />
+                {{ recipe.likes }}
+              </span>
+            </div>
+          </li>
+        }
+      </ol>
+
+      @if (totalPages() > 1) {
+        <nav class="pagination" aria-label="Recipe pages">
+          <button
+            type="button"
+            aria-label="Previous page"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            ‹
+          </button>
+
+          @for (page of pageNumbers(); track $index) {
+            @if (page === 'ellipsis') {
+              <span aria-hidden="true">…</span>
+            } @else {
+              <button
+                type="button"
+                [class.is-active]="page === currentPage()"
+                [attr.aria-current]="page === currentPage() ? 'page' : null"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            }
+          }
+
+          <button
+            type="button"
+            aria-label="Next page"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            ›
+          </button>
+        </nav>
+      }
+    }
+  </main>
+</div>
