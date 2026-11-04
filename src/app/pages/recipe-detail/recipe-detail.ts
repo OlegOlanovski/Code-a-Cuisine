@@ -3,7 +3,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Recipe } from '../../models/recipe.model';
 import { Recipes } from '../../services/recipes';
 
-const PIECE_UNITS = new Set(['piece', 'stück', 'stueck']);
+const GRAM_UNITS = new Set(['g', 'gram', 'grams', 'gramme', 'grammes']);
+const MILLILITER_UNITS = new Set(['ml', 'milliliter', 'milliliters', 'millilitre', 'millilitres']);
+const PIECE_UNITS = new Set(['piece', 'pieces', 'pc', 'pcs', 'stück', 'stueck']);
 
 @Component({
   selector: 'app-recipe-detail',
@@ -49,8 +51,46 @@ export class RecipeDetail implements OnInit {
     }
   }
 
-  protected displayUnit(unit: string): string {
-    return PIECE_UNITS.has(unit.toLowerCase()) ? '' : unit;
+  protected formatIngredientAmount(amount: number | null, unit: string): string {
+    if (amount === null) {
+      return '';
+    }
+
+    const normalizedUnit = unit.trim().toLowerCase();
+
+    if (GRAM_UNITS.has(normalizedUnit)) {
+      return `${this.formatNumber(amount)}g`;
+    }
+
+    if (
+      normalizedUnit === 'kg' ||
+      normalizedUnit === 'kilogram' ||
+      normalizedUnit === 'kilograms'
+    ) {
+      return `${this.formatNumber(amount * 1000)}g`;
+    }
+
+    if (MILLILITER_UNITS.has(normalizedUnit)) {
+      return `${this.formatNumber(amount)}ml`;
+    }
+
+    if (normalizedUnit === 'l' || normalizedUnit === 'liter' || normalizedUnit === 'litre') {
+      return `${this.formatNumber(amount * 1000)}ml`;
+    }
+
+    if (normalizedUnit === 'tbsp' || normalizedUnit === 'tablespoon') {
+      return `${this.formatNumber(amount * 15)}ml`;
+    }
+
+    if (normalizedUnit === 'tsp' || normalizedUnit === 'teaspoon') {
+      return `${this.formatNumber(amount * 5)}ml`;
+    }
+
+    if (PIECE_UNITS.has(normalizedUnit) || !normalizedUnit) {
+      return `${this.formatNumber(amount)} piece`;
+    }
+
+    return this.formatNumber(amount);
   }
 
   protected chefsUsed(recipe: Recipe): number[] {
@@ -118,5 +158,9 @@ export class RecipeDetail implements OnInit {
 
   private capitalize(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  private formatNumber(value: number): string {
+    return Number(value.toFixed(2)).toString();
   }
 }

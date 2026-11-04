@@ -4,7 +4,7 @@ export type Diet = 'vegetarian' | 'vegan' | 'keto' | 'none';
 
 export type TimeCategory = 'quick' | 'medium' | 'elaborate';
 
-export type IngredientUnit = 'g' | 'piece' | 'l' | 'ml' | 'tbsp' | 'tsp' | '';
+export type IngredientUnit = 'g' | 'ml' | 'piece';
 
 export interface RecipeIngredient {
   amount: number | null;

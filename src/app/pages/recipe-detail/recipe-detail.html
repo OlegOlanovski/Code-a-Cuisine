@@ -92,7 +92,7 @@
                 @for (ingredient of recipe.yourIngredients; track $index) {
                   <li>
                     <span class="ingredient-amount">
-                      {{ ingredient.amount }}{{ displayUnit(ingredient.unit) }}
+                      {{ formatIngredientAmount(ingredient.amount, ingredient.unit) }}
                     </span>
                     <span>{{ ingredient.name }}</span>
                   </li>
@@ -107,7 +107,7 @@
                   <li>
                     @if (ingredient.amount !== null) {
                       <span class="ingredient-amount">
-                        {{ ingredient.amount }}{{ displayUnit(ingredient.unit) }}
+                        {{ formatIngredientAmount(ingredient.amount, ingredient.unit) }}
                       </span>
                     }
                     <span>{{ ingredient.name }}</span>
