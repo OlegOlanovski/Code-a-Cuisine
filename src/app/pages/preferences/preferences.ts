@@ -35,26 +35,52 @@ export class Preferences {
   protected readonly isGenerating = signal(false);
   protected readonly generationErrorMessage = signal<string | null>(null);
 
+  /**
+   * Adjusts the number of portions within the supported range.
+   *
+   * @param amount - Signed amount added to the current portion count.
+   */
   protected changePortions(amount: number): void {
     this.portions.update((value) => Math.min(12, Math.max(1, value + amount)));
   }
 
+  /**
+   * Adjusts the number of cooks within the supported range.
+   *
+   * @param amount - Signed amount added to the current cook count.
+   */
   protected changeCooks(amount: number): void {
     this.cooks.update((value) => Math.min(4, Math.max(1, value + amount)));
   }
 
+  /**
+   * Selects a cooking-time preference.
+   *
+   * @param value - Cooking-time label selected by the user.
+   */
   protected selectCookingTime(value: string): void {
     this.cookingTime.set(value);
   }
 
+  /**
+   * Selects a cuisine preference.
+   *
+   * @param value - Cuisine label selected by the user.
+   */
   protected selectCuisine(value: string): void {
     this.cuisine.set(value);
   }
 
+  /**
+   * Selects a dietary preference.
+   *
+   * @param value - Diet label selected by the user.
+   */
   protected selectDiet(value: string): void {
     this.diet.set(value);
   }
 
+  /** Validates the draft and requests generated recipes. */
   protected generateRecipe(): void {
     if (!this.hasValidRecipeRequest()) {
       this.generationErrorMessage.set(null);
@@ -102,20 +128,28 @@ export class Preferences {
       });
   }
 
+  /** Closes the invalid-request popup. */
   protected closeErrorPopup(): void {
     this.isErrorPopupOpen.set(false);
   }
 
+  /** Dismisses the recipe generation error. */
   protected closeGenerationError(): void {
     this.generationErrorMessage.set(null);
   }
 
+  /** Closes any open error message when Escape is pressed. */
   @HostListener('document:keydown.escape')
   protected closeErrorPopupOnEscape(): void {
     this.closeErrorPopup();
     this.closeGenerationError();
   }
 
+  /**
+   * Checks whether the current draft contains a valid recipe request.
+   *
+   * @returns `true` when all preferences and ingredient quantities are valid.
+   */
   private hasValidRecipeRequest(): boolean {
     const ingredients = this.recipeDraft.ingredients();
     const portions = this.portions();

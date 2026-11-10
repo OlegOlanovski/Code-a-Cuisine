@@ -26,6 +26,12 @@ export class RecipeGenerator {
 
   readonly results = signal<Recipe[]>([]);
 
+  /**
+   * Sends a recipe generation request to the configured workflow endpoint.
+   *
+   * @param request - Ingredients and preferences used to generate recipes.
+   * @returns An observable containing the generated recipes.
+   */
   generate(request: GenerateRecipeRequest): Observable<GenerateRecipeResponse> {
     return this.http.post<GenerateRecipeResponse>(environment.n8nWebhookUrl, request);
   }

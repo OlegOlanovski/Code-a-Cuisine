@@ -65,25 +65,30 @@ export class CuisineRecipes {
     { initialValue: this.route.snapshot.paramMap.get('cuisine') ?? '' },
   );
 
+  /** Resolves the route slug to a supported cuisine. */
   protected readonly cuisine = computed(() => {
     const slug = this.cuisineSlug();
     return slug in CUISINES ? (slug as Cuisine) : null;
   });
 
+  /** Resolves display metadata for the selected cuisine. */
   protected readonly cuisineInfo = computed(() => {
     const cuisine = this.cuisine();
     return cuisine ? CUISINES[cuisine] : null;
   });
 
+  /** Calculates the number of recipe pages available. */
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.recipes().length / this.itemsPerPage)),
   );
 
+  /** Selects the recipes displayed on the current page. */
   protected readonly pagedRecipes = computed(() => {
     const start = (this.currentPage() - 1) * this.itemsPerPage;
     return this.recipes().slice(start, start + this.itemsPerPage);
   });
 
+  /** Builds the compact pagination model, including ellipsis markers. */
   protected readonly pageNumbers = computed<(number | 'ellipsis')[]>(() => {
     const total = this.totalPages();
     const current = this.currentPage();
@@ -108,6 +113,7 @@ export class CuisineRecipes {
     return pages;
   });
 
+  /** Watches the selected cuisine and reloads its recipes when it changes. */
   constructor() {
     effect(() => {
       const cuisine = this.cuisine();
@@ -126,6 +132,12 @@ export class CuisineRecipes {
     });
   }
 
+  /**
+   * Builds the labels displayed on a recipe card.
+   *
+   * @param recipe - Recipe whose metadata is displayed.
+   * @returns Diet and time-category labels for the card.
+   */
   protected displayTags(recipe: Recipe): string[] {
     const tags: string[] = [];
 
@@ -137,6 +149,11 @@ export class CuisineRecipes {
     return tags;
   }
 
+  /**
+   * Navigates the recipe list to a valid page.
+   *
+   * @param page - One-based page number to display.
+   */
   protected goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) {
       return;
@@ -146,6 +163,11 @@ export class CuisineRecipes {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /**
+   * Loads recipes for the selected cuisine.
+   *
+   * @param cuisine - Cuisine used to filter the recipe collection.
+   */
   private async loadRecipes(cuisine: Cuisine): Promise<void> {
     try {
       this.recipes.set(await this.recipesService.getByCuisine(cuisine));
@@ -157,6 +179,12 @@ export class CuisineRecipes {
     }
   }
 
+  /**
+   * Uppercases the first character of a value.
+   *
+   * @param value - Text to capitalize.
+   * @returns The capitalized text.
+   */
   private capitalize(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }

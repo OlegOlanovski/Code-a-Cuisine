@@ -14,6 +14,8 @@ export class RecipeDraft {
   readonly cookingTime = signal('');
   readonly cuisine = signal('');
   readonly diet = signal('No preferences');
+
+  /** Resets all recipe draft fields to their initial values. */
   reset(): void {
     this.ingredients.set([]);
     this.portions.set(2);

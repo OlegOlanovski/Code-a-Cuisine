@@ -62,6 +62,7 @@ export class Cookbook implements OnInit {
     },
   ];
 
+  /** Loads the most-liked recipes shown on the cookbook page. */
   async ngOnInit(): Promise<void> {
     try {
       this.mostLiked.set(await this.recipesService.getMostLiked(3));

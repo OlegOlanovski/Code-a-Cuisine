@@ -10,6 +10,7 @@ export class LoadingScreen {
   readonly message = input('Generating recipe');
   protected readonly videoFailed = signal(false);
 
+  /** Switches from the loading video to the fallback animation. */
   protected useFallbackAnimation(): void {
     this.videoFailed.set(true);
   }

@@ -62,6 +62,11 @@ describe('Preferences', () => {
   });
 });
 
+/**
+ * Clicks the recipe generation button in a test fixture.
+ *
+ * @param element - Root element of the rendered preferences component.
+ */
 function clickGenerate(element: HTMLElement): void {
   const button = element.querySelector<HTMLButtonElement>('.generate-button');
   button?.click();

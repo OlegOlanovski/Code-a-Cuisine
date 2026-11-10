@@ -83,6 +83,11 @@ export class GenerateRecipe {
   protected editingIngredientIndex: number | null = null;
   protected readonly ingredients = this.recipeDraft.ingredients;
 
+  /**
+   * Filters ingredient suggestions by the current input.
+   *
+   * @returns Up to three matching ingredient names.
+   */
   protected get filteredIngredientSuggestions(): string[] {
     const query = this.ingredientName.trim().toLocaleLowerCase();
 
@@ -95,18 +100,34 @@ export class GenerateRecipe {
       .slice(0, 3);
   }
 
+  /**
+   * Toggles the unit menu without triggering the document click handler.
+   *
+   * @param event - Click event originating from the unit selector.
+   */
   protected toggleUnitMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.isIngredientMenuOpen = false;
     this.isUnitMenuOpen = !this.isUnitMenuOpen;
   }
 
+  /**
+   * Selects an ingredient unit and closes the unit menu.
+   *
+   * @param unit - Unit selected by the user.
+   * @param event - Click event originating from the unit option.
+   */
   protected selectUnit(unit: string, event: MouseEvent): void {
     event.stopPropagation();
     this.unit = unit;
     this.isUnitMenuOpen = false;
   }
 
+  /**
+   * Updates and validates the ingredient name input.
+   *
+   * @param value - Current ingredient name input.
+   */
   protected updateIngredientMenu(value: string): void {
     this.ingredientName = value;
     this.ingredientError = this.hasOnlyEnglishCharacters(value)
@@ -116,6 +137,12 @@ export class GenerateRecipe {
     this.isIngredientMenuOpen = this.filteredIngredientSuggestions.length > 0;
   }
 
+  /**
+   * Applies an ingredient suggestion to the form.
+   *
+   * @param ingredient - Suggested ingredient name to select.
+   * @param event - Click event originating from the suggestion.
+   */
   protected selectIngredient(ingredient: string, event: MouseEvent): void {
     event.stopPropagation();
     this.ingredientName = ingredient;
@@ -123,12 +150,14 @@ export class GenerateRecipe {
     this.isIngredientMenuOpen = false;
   }
 
+  /** Closes the unit and ingredient suggestion menus. */
   @HostListener('document:click')
   protected closeMenus(): void {
     this.isUnitMenuOpen = false;
     this.isIngredientMenuOpen = false;
   }
 
+  /** Adds a valid ingredient or saves changes to the ingredient being edited. */
   protected addIngredient(): void {
     const name = this.ingredientName.trim();
 
@@ -162,6 +191,11 @@ export class GenerateRecipe {
     this.isIngredientMenuOpen = false;
   }
 
+  /**
+   * Loads an existing ingredient into the form for editing.
+   *
+   * @param index - Index of the ingredient to edit.
+   */
   protected editIngredient(index: number): void {
     const ingredient = this.ingredients()[index];
 
@@ -177,6 +211,11 @@ export class GenerateRecipe {
     this.closeMenus();
   }
 
+  /**
+   * Removes an ingredient and clears any active edit state.
+   *
+   * @param index - Index of the ingredient to remove.
+   */
   protected removeIngredient(index: number): void {
     this.ingredients.update((ingredients) =>
       ingredients.filter((_, ingredientIndex) => ingredientIndex !== index),
@@ -190,6 +229,12 @@ export class GenerateRecipe {
     }
   }
 
+  /**
+   * Converts a stored ingredient unit to its display abbreviation.
+   *
+   * @param unit - Stored ingredient unit.
+   * @returns The abbreviated display unit.
+   */
   protected unitAbbreviation(unit: string): string {
     if (unit === 'gram') {
       return 'g';
@@ -202,6 +247,12 @@ export class GenerateRecipe {
     return unit;
   }
 
+  /**
+   * Checks whether an ingredient name contains only supported English characters.
+   *
+   * @param value - Ingredient name to validate.
+   * @returns `true` when the name is empty or contains only supported characters.
+   */
   private hasOnlyEnglishCharacters(value: string): boolean {
     const name = value.trim();
     return !name || /^[A-Za-z][A-Za-z '\u2019-]*$/.test(name);

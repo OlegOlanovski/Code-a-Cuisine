@@ -24,6 +24,7 @@ export class RecipeDetail implements OnInit {
   protected readonly isLiking = signal(false);
   protected readonly liked = signal(false);
 
+  /** Loads the recipe identified by the current route. */
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id');
 
@@ -51,6 +52,13 @@ export class RecipeDetail implements OnInit {
     }
   }
 
+  /**
+   * Formats an ingredient amount using the display unit expected by the recipe page.
+   *
+   * @param amount - Numeric ingredient amount, or `null` when no amount is specified.
+   * @param unit - Unit supplied by the recipe data.
+   * @returns The formatted amount and normalized unit.
+   */
   protected formatIngredientAmount(amount: number | null, unit: string): string {
     if (amount === null) {
       return '';
@@ -93,17 +101,35 @@ export class RecipeDetail implements OnInit {
     return this.formatNumber(amount);
   }
 
+  /**
+   * Finds the chefs assigned to at least one recipe direction.
+   *
+   * @param recipe - Recipe whose directions are inspected.
+   * @returns Unique chef numbers in ascending order.
+   */
   protected chefsUsed(recipe: Recipe): number[] {
     return [...new Set(recipe.directions.map((direction) => direction.chef))].sort(
       (firstChef, secondChef) => firstChef - secondChef,
     );
   }
 
+  /**
+   * Resolves the icon path for a chef number.
+   *
+   * @param chef - Chef number to represent.
+   * @returns The path to the corresponding chef icon.
+   */
   protected chefIcon(chef: number): string {
     const validChef = Math.min(4, Math.max(1, chef));
     return `/images/recipe-detail/chef-${validChef}.svg`;
   }
 
+  /**
+   * Builds the human-readable diet label for a recipe.
+   *
+   * @param recipe - Recipe whose diet is displayed.
+   * @returns A display label for the recipe diet.
+   */
   protected dietLabel(recipe: Recipe): string {
     if (recipe.diet === 'none') {
       return 'No preferences';
@@ -112,6 +138,12 @@ export class RecipeDetail implements OnInit {
     return this.capitalize(recipe.diet);
   }
 
+  /**
+   * Builds the human-readable time category label for a recipe.
+   *
+   * @param recipe - Recipe whose time category is displayed.
+   * @returns A display label for the cooking-time category.
+   */
   protected timeCategoryLabel(recipe: Recipe): string {
     if (recipe.timeCategory === 'elaborate') {
       return 'Complex';
@@ -120,12 +152,18 @@ export class RecipeDetail implements OnInit {
     return this.capitalize(recipe.timeCategory);
   }
 
+  /**
+   * Resolves the heart icon for the current liked state.
+   *
+   * @returns The path to the empty or filled heart icon.
+   */
   protected heartIcon(): string {
     return this.liked()
       ? '/images/recipe-detail/heart-full.svg'
       : '/images/recipe-detail/heart.svg';
   }
 
+  /** Optimistically likes the current recipe and persists the updated count. */
   protected async likeRecipe(): Promise<void> {
     const recipe = this.recipe();
 
@@ -156,10 +194,22 @@ export class RecipeDetail implements OnInit {
     }
   }
 
+  /**
+   * Uppercases the first character of a value.
+   *
+   * @param value - Text to capitalize.
+   * @returns The capitalized text.
+   */
   private capitalize(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
 
+  /**
+   * Rounds a number to at most two decimal places for display.
+   *
+   * @param value - Number to format.
+   * @returns A compact decimal string.
+   */
   private formatNumber(value: number): string {
     return Number(value.toFixed(2)).toString();
   }

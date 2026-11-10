@@ -20,12 +20,14 @@ export class Results {
 
   protected readonly recipes = this.recipeGenerator.results;
 
+  /** Derives the display label for the generated recipes' cuisine. */
   protected readonly cuisine = computed(() => {
     const cuisine = this.recipes()[0]?.cuisine ?? '';
 
     return cuisine ? cuisine.charAt(0).toUpperCase() + cuisine.slice(1) : '';
   });
 
+  /** Derives the display label for the generated recipes' cooking time. */
   protected readonly cookingTime = computed(() => {
     const category = this.recipes()[0]?.timeCategory;
 
