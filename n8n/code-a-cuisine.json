@@ -12,10 +12,7 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        -592,
-        -80
-      ],
+      "position": [-592, -80],
       "id": "873f9cd4-0855-41f4-876d-bc3001e98efc",
       "name": "Receive Recipe Request",
       "webhookId": "e76f5291-f646-43eb-aa4e-ee308a2c58c5"
@@ -26,10 +23,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -336,
-        -80
-      ],
+      "position": [-336, -80],
       "id": "cf2c0c07-4a4b-4f29-baf3-e080a468ec51",
       "name": "Validate Recipe Request"
     },
@@ -59,10 +53,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        -80,
-        -80
-      ],
+      "position": [-80, -80],
       "id": "c4c5d48b-9e81-4505-82e6-c1f34fb20a25",
       "name": "Is Request Valid?"
     },
@@ -76,10 +67,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        32,
-        -352
-      ],
+      "position": [32, -352],
       "id": "31d12983-3967-4caa-a37c-604ee5a63025",
       "name": "Respond With Validation Error"
     },
@@ -91,10 +79,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
-      "position": [
-        528,
-        432
-      ],
+      "position": [528, 432],
       "id": "3f8318f6-4c57-4504-9d4b-3d948fc148c2",
       "name": "Generate Recipes"
     },
@@ -108,10 +93,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
-      "position": [
-        528,
-        672
-      ],
+      "position": [528, 672],
       "id": "dfefaf20-32c7-4661-863a-f1d70e83bb6a",
       "name": "Google Gemini Chat Model",
       "credentials": {
@@ -127,10 +109,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        768,
-        -64
-      ],
+      "position": [768, -64],
       "id": "dc11351e-b210-46b2-af2f-642151805db1",
       "name": "Parse Generated Recipes"
     },
@@ -145,10 +124,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        1072,
-        -64
-      ],
+      "position": [1072, -64],
       "id": "cbb691f1-d6fc-4843-a83d-2146fb94548a",
       "name": "Sign In Anonymously"
     },
@@ -163,10 +139,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        928,
-        160
-      ],
+      "position": [928, 160],
       "id": "f2071d36-32a3-4929-b6b0-e6e3d394346d",
       "name": "Save Recipe to Firebase"
     },
@@ -176,10 +149,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1360,
-        -64
-      ],
+      "position": [1360, -64],
       "id": "be6ce8c6-8ff3-42b2-a05d-09a9432cb149",
       "name": "Combine Token and Recipe"
     },
@@ -189,10 +159,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1216,
-        160
-      ],
+      "position": [1216, 160],
       "id": "ab45ad57-deac-41ab-9eef-530d4bafe833",
       "name": "Attach Firebase ID"
     },
@@ -202,10 +169,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1504,
-        160
-      ],
+      "position": [1504, 160],
       "id": "cbaf21f7-1c41-4782-974b-19dac81e5ae5",
       "name": "Combine Final Recipes"
     },
@@ -219,10 +183,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        960,
-        608
-      ],
+      "position": [960, 608],
       "id": "7e2fcc46-ee6a-492c-8c20-0cfd08368bc8",
       "name": "Respond With Recipes"
     },
@@ -232,10 +193,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        256,
-        -96
-      ],
+      "position": [256, -96],
       "id": "9726a62d-2bb2-4e54-8841-775fefba3c15",
       "name": "Extract Request Context"
     },
@@ -250,10 +208,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        -528,
-        176
-      ],
+      "position": [-528, 176],
       "id": "a8962b1d-2cfd-4e1b-a943-d422fbd480b7",
       "name": "Sign In For Quota Check"
     },
@@ -264,10 +219,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        96,
-        176
-      ],
+      "position": [96, 176],
       "id": "f4754830-f3a3-480d-95b7-eb6c20fd017c",
       "name": "Get IP Count"
     },
@@ -278,10 +230,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        -96,
-        176
-      ],
+      "position": [-96, 176],
       "id": "20757f83-3815-469f-9f50-515d6228ddc0",
       "name": "Get Total Count"
     },
@@ -291,10 +240,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -544,
-        416
-      ],
+      "position": [-544, 416],
       "id": "59012022-453f-4883-b544-45e95e10063d",
       "name": "Check Quota"
     },
@@ -304,10 +250,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -192,
-        656
-      ],
+      "position": [-192, 656],
       "id": "8f63c681-a945-45fb-9989-3153984b402a",
       "name": "Build Quota Error Response"
     },
@@ -321,10 +264,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        48,
-        656
-      ],
+      "position": [48, 656],
       "id": "ae24ce5b-b943-4ccc-97e9-5d7d6afa88ac",
       "name": "Respond to Webhook"
     },
@@ -355,10 +295,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        -96,
-        416
-      ],
+      "position": [-96, 416],
       "id": "7b8477a8-d10b-4995-bd4b-56c021e2572e",
       "name": "Is Quota Available?"
     },
@@ -368,10 +305,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        944,
-        384
-      ],
+      "position": [944, 384],
       "id": "b2ec49a9-b895-458d-9964-dcab92698ebc",
       "name": "Prepare Quota Increment"
     },
@@ -386,10 +320,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        1392,
-        384
-      ],
+      "position": [1392, 384],
       "id": "ef527e46-df7d-4be2-9011-4e38b5a73c3f",
       "name": "Increment Total Count"
     },
@@ -404,12 +335,49 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        1168,
-        384
-      ],
+      "position": [1168, 384],
       "id": "715da282-3758-44e4-bc8a-7a7fbde4d043",
       "name": "Increment IP Count"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-592, 912],
+      "id": "0ab2db57-f2ae-4a42-87d5-c5aed4fc32eb",
+      "name": "On Workflow Error"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nconst failure = payload.execution ?? payload.trigger ?? {};\nconst error = failure.error ?? {};\nconst cause = error.cause ?? {};\n\nconst workflowId = payload.workflow?.id ?? 'unknown';\nconst workflowName = payload.workflow?.name ?? 'Unknown workflow';\nconst executionId = payload.execution?.id ?? 'not available';\nconst executionUrl = payload.execution?.url ?? 'not available';\nconst mode = failure.mode ?? 'unknown';\nconst lastNode = payload.execution?.lastNodeExecuted ?? error.node?.name ?? 'trigger';\nconst errorName = error.name ?? cause.name ?? 'Error';\nconst message = error.message || cause.message || 'No error message was provided';\nconst timestamp = new Date().toISOString();\n\nconst logEntry = {\n  event: 'n8n_workflow_error',\n  timestamp,\n  workflowId,\n  workflowName,\n  executionId,\n  executionUrl,\n  mode,\n  lastNode,\n  errorName,\n  message,\n};\n\n// CODE_ENABLE_STDOUT=true forwards this structured entry to the n8n process log.\nconsole.log(JSON.stringify(logEntry));\n\nconst text = [\n  'An n8n workflow execution failed.',\n  '',\n  `Workflow: ${workflowName} (${workflowId})`,\n  `Execution: ${executionId}`,\n  `Mode: ${mode}`,\n  `Failed node: ${lastNode}`,\n  `Error: ${errorName}: ${message}`,\n  `Time (UTC): ${timestamp}`,\n  `Execution URL: ${executionUrl}`,\n].join('\\n');\n\nreturn [{\n  json: {\n    ...logEntry,\n    subject: `[n8n] ${workflowName} failed at ${lastNode}`,\n    text,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-336, 912],
+      "id": "bd2a3dfa-84c6-4af2-a6bc-c86b049ebbc0",
+      "name": "Format and Log Error"
+    },
+    {
+      "parameters": {
+        "resource": "email",
+        "operation": "send",
+        "fromEmail": "n8n@example.com",
+        "toEmail": "ops@example.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-80, 912],
+      "id": "2c698231-7a47-4570-ad4a-c8c98ab9af3a",
+      "name": "Email Error Notification",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     }
   ],
   "pinData": {},
@@ -658,14 +626,37 @@
           }
         ]
       ]
+    },
+    "On Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Format and Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format and Log Error": {
+      "main": [
+        [
+          {
+            "node": "Email Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "saveDataErrorExecution": "all"
   },
-  "versionId": "03f5eec2-77fa-4950-a00e-424441e800f1",
+  "versionId": "dad44275-cf90-47fe-ad62-cead860dc230",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "d0f3d36a467f3bbf62495bd63243c82c84eeadabac5b2dd1abbff5d391d8eef1"

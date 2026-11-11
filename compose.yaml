@@ -8,6 +8,12 @@ services:
       GENERIC_TIMEZONE: Europe/Berlin
       TZ: Europe/Berlin
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
+      N8N_LOG_LEVEL: ${N8N_LOG_LEVEL:-info}
+      N8N_LOG_OUTPUT: ${N8N_LOG_OUTPUT:-console,file}
+      N8N_LOG_FILE_LOCATION: /home/node/.n8n/logs/n8n.log
+      N8N_LOG_FILE_SIZE_MAX: ${N8N_LOG_FILE_SIZE_MAX:-10}
+      N8N_LOG_FILE_COUNT_MAX: ${N8N_LOG_FILE_COUNT_MAX:-5}
+      CODE_ENABLE_STDOUT: 'true'
     volumes:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
