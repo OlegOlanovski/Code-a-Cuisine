@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 import { RecipeDraft } from '../../services/recipe-draft';
@@ -10,7 +10,7 @@ import { RecipeGenerator } from '../../services/recipe-generator';
   templateUrl: './preferences.html',
   styleUrl: './preferences.scss',
 })
-export class Preferences {
+export class Preferences implements OnInit {
   private readonly minimumIngredientCount = 2;
   private readonly minimumAmountPerPortion = 150;
   private readonly recipeDraft = inject(RecipeDraft);
@@ -34,6 +34,13 @@ export class Preferences {
   protected readonly isErrorPopupOpen = signal(false);
   protected readonly isGenerating = signal(false);
   protected readonly generationErrorMessage = signal<string | null>(null);
+  protected readonly quotaStatus = this.recipeGenerator.quotaStatus;
+  protected readonly isQuotaLoading = signal(true);
+
+  /** Loads the daily allowance for the request's public IP address. */
+  ngOnInit(): void {
+    this.refreshQuotaStatus();
+  }
 
   /**
    * Adjusts the number of portions within the supported range.
@@ -82,6 +89,13 @@ export class Preferences {
 
   /** Validates the draft and requests generated recipes. */
   protected generateRecipe(): void {
+    const quota = this.quotaStatus();
+
+    if (quota && !quota.canGenerate) {
+      this.generationErrorMessage.set(quota.message);
+      return;
+    }
+
     if (!this.hasValidRecipeRequest()) {
       this.generationErrorMessage.set(null);
       this.isErrorPopupOpen.set(true);
@@ -110,6 +124,7 @@ export class Preferences {
       .subscribe({
         next: (response) => {
           this.recipeGenerator.results.set(response.recipes);
+          this.recipeGenerator.quotaStatus.set(response.quota);
           this.recipeDraft.reset();
           this.router.navigate(['/results']);
         },
@@ -117,6 +132,12 @@ export class Preferences {
           console.error('Recipe generation failed:', error);
 
           const details = error?.error?.details;
+          const quota = error?.error?.quota;
+
+          if (quota) {
+            this.recipeGenerator.quotaStatus.set(quota);
+          }
+
           const message =
             error?.error?.message ??
             (Array.isArray(details) ? details.join(' ') : null) ??
@@ -126,6 +147,21 @@ export class Preferences {
           this.isGenerating.set(false);
         },
       });
+  }
+
+  /** Refreshes the quota without consuming a recipe generation. */
+  protected refreshQuotaStatus(): void {
+    this.isQuotaLoading.set(true);
+
+    this.recipeGenerator.getQuotaStatus().subscribe({
+      next: (quota) => {
+        this.recipeGenerator.quotaStatus.set(quota);
+        this.isQuotaLoading.set(false);
+      },
+      error: () => {
+        this.isQuotaLoading.set(false);
+      },
+    });
   }
 
   /** Closes the invalid-request popup. */

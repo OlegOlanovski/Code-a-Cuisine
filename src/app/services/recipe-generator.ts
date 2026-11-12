@@ -16,6 +16,18 @@ export interface GenerateRecipeRequest {
 
 export interface GenerateRecipeResponse {
   recipes: Recipe[];
+  quota: QuotaStatus;
+}
+
+export interface QuotaStatus {
+  date: string;
+  perIpLimit: number;
+  systemLimit: number;
+  ipUsed: number;
+  totalUsed: number;
+  remainingRecipes: number;
+  canGenerate: boolean;
+  message: string;
 }
 
 @Injectable({
@@ -25,6 +37,7 @@ export class RecipeGenerator {
   private readonly http = inject(HttpClient);
 
   readonly results = signal<Recipe[]>([]);
+  readonly quotaStatus = signal<QuotaStatus | null>(null);
 
   /**
    * Sends a recipe generation request to the configured workflow endpoint.
@@ -34,5 +47,11 @@ export class RecipeGenerator {
    */
   generate(request: GenerateRecipeRequest): Observable<GenerateRecipeResponse> {
     return this.http.post<GenerateRecipeResponse>(environment.n8nWebhookUrl, request);
+  }
+
+  /** Loads the quota available to the current public IP address. */
+  getQuotaStatus(): Observable<QuotaStatus> {
+    const quotaUrl = environment.n8nWebhookUrl.replace(/\/generate-recipes\/?$/, '/quota-status');
+    return this.http.get<QuotaStatus>(quotaUrl);
   }
 }

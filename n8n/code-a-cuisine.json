@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body;\nconst errors = [];\n\nif (!Array.isArray(body.ingredients) || body.ingredients.length === 0) {\n  errors.push('At least one ingredient is required.');\n}\n\nif (typeof body.servings !== 'number' || body.servings < 1 || body.servings > 12) {\n  errors.push('Servings must be between 1 and 12.');\n}\n\nconst validTimeCategories = ['quick', 'medium', 'elaborate'];\nif (!validTimeCategories.includes(body.timeCategory)) {\n  errors.push('Invalid time category.');\n}\n\nconst validCuisines = ['german', 'italian', 'japanese', 'indian', 'gourmet', 'fusion'];\nif (!validCuisines.includes(body.cuisine)) {\n  errors.push('Invalid cuisine.');\n}\n\nconst validDiets = ['vegetarian', 'vegan', 'keto', 'none'];\nif (!validDiets.includes(body.diet)) {\n  errors.push('Invalid diet.');\n}\n\nif (typeof body.helperCount !== 'number' || body.helperCount < 1 || body.helperCount > 4) {\n  errors.push('Helper count must be between 1 and 4.');\n}\n\nreturn [\n  {\n    json: {\n      ...body,\n      isValid: errors.length === 0,\n      validationErrors: errors,\n    },\n  },\n];\n"
+        "jsCode": "const request = $input.first().json;\nconst body = request.body || {};\nconst errors = [];\n\nif (!request.ipValid) {\n  errors.push('A valid IPv4 or IPv6 client address is required.');\n}\n\nif (!Array.isArray(body.ingredients) || body.ingredients.length === 0) {\n  errors.push('At least one ingredient is required.');\n}\n\nif (!Number.isInteger(body.servings) || body.servings < 1 || body.servings > 12) {\n  errors.push('Servings must be an integer between 1 and 12.');\n}\n\nconst validTimeCategories = ['quick', 'medium', 'elaborate'];\nif (!validTimeCategories.includes(body.timeCategory)) {\n  errors.push('Invalid time category.');\n}\n\nconst validCuisines = ['german', 'italian', 'japanese', 'indian', 'gourmet', 'fusion'];\nif (!validCuisines.includes(body.cuisine)) {\n  errors.push('Invalid cuisine.');\n}\n\nconst validDiets = ['vegetarian', 'vegan', 'keto', 'none'];\nif (!validDiets.includes(body.diet)) {\n  errors.push('Invalid diet.');\n}\n\nif (!Number.isInteger(body.helperCount) || body.helperCount < 1 || body.helperCount > 4) {\n  errors.push('Helper count must be an integer between 1 and 4.');\n}\n\nreturn [{\n  json: {\n    ...body,\n    ip: request.ip,\n    ipKey: request.ipKey,\n    date: request.date,\n    isValid: errors.length === 0,\n    validationErrors: errors,\n  },\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -165,7 +165,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst responseBody = JSON.stringify({ recipes: items.map((item) => item.json) });\nreturn [{ json: { responseBody } }];"
+        "jsCode": "const items = $input.all();\nconst quota = $('Prepare Quota Increment').first().json.quota;\nconst responseBody = JSON.stringify({ recipes: items.map((item) => item.json), quota });\nreturn [{ json: { responseBody } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -189,7 +189,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const headers = $('Receive Recipe Request').first().json.headers;\nconst forwardedFor = headers['x-forwarded-for'];\nconst rawIp = forwardedFor ? forwardedFor.split(',')[0].trim() : (headers['x-real-ip'] || 'unknown');\nconst safeIp = rawIp.replace(/[.#$\\[\\]]/g, '_');\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{ json: { ip: safeIp, date: today } }];"
+        "jsCode": "const request = $input.first().json;\nconst headers = request.headers || {};\nconst forwardedFor = String(headers['x-forwarded-for'] || '').split(',')[0].trim();\nconst rawIp = forwardedFor || String(headers['x-real-ip'] || '').trim();\n\nfunction parseIpv4(value) {\n  const parts = value.split('.');\n  if (parts.length !== 4 || parts.some((part) => !/^\\d{1,3}$/.test(part))) return null;\n  const numbers = parts.map(Number);\n  if (numbers.some((part) => part < 0 || part > 255)) return null;\n  return numbers.join('.');\n}\n\nfunction parseIpv6(value) {\n  let address = value.toLowerCase();\n  const zoneIndex = address.indexOf('%');\n  if (zoneIndex >= 0) address = address.slice(0, zoneIndex);\n\n  if (address.includes('.')) {\n    const separator = address.lastIndexOf(':');\n    const ipv4 = parseIpv4(address.slice(separator + 1));\n    if (!ipv4) return null;\n    const octets = ipv4.split('.').map(Number);\n    address = `${address.slice(0, separator)}:${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;\n  }\n\n  if (!/^[0-9a-f:]+$/.test(address) || (address.match(/::/g) || []).length > 1) return null;\n  const compressed = address.includes('::');\n  const [leftText, rightText = ''] = address.split('::');\n  const left = leftText ? leftText.split(':') : [];\n  const right = rightText ? rightText.split(':') : [];\n  if ([...left, ...right].some((part) => !/^[0-9a-f]{1,4}$/.test(part))) return null;\n\n  if (!compressed && left.length !== 8) return null;\n  const missing = 8 - left.length - right.length;\n  if (compressed && missing < 1) return null;\n  const groups = compressed ? [...left, ...Array(missing).fill('0'), ...right] : left;\n  return groups.map((part) => parseInt(part, 16).toString(16)).join(':');\n}\n\nfunction normalizeIp(value) {\n  let candidate = value.trim();\n  const bracketMatch = candidate.match(/^\\[([^\\]]+)](?::\\d+)?$/);\n  if (bracketMatch) candidate = bracketMatch[1];\n\n  const ipv4WithPort = candidate.match(/^(\\d{1,3}(?:\\.\\d{1,3}){3}):\\d+$/);\n  if (ipv4WithPort) candidate = ipv4WithPort[1];\n\n  return parseIpv4(candidate) || (candidate.includes(':') ? parseIpv6(candidate) : null);\n}\n\nconst ip = normalizeIp(rawIp);\nconst dateParts = new Intl.DateTimeFormat('en-GB', {\n  timeZone: 'Europe/Berlin',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n}).formatToParts(new Date()).reduce((parts, part) => ({ ...parts, [part.type]: part.value }), {});\nconst date = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;\n\nreturn [{\n  json: {\n    ...request,\n    rawIp,\n    ip: ip || '',\n    ipKey: ip ? ip.replace(/\\./g, '_') : '',\n    ipValid: Boolean(ip),\n    date,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -214,7 +214,7 @@
     },
     {
       "parameters": {
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Request Context').first().json.date }}/byIp/{{ $('Extract Request Context').first().json.ip }}.json?auth={{ $('Sign In For Quota Check').first().json.idToken }}\n",
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Request Context').first().json.date }}/byIp/{{ $('Extract Request Context').first().json.ipKey }}.json?auth={{ $('Sign In For Quota Check').first().json.idToken }}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -236,7 +236,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ipCountData = $('Get IP Count').first().json;\nconst totalCountData = $('Get Total Count').first().json;\n\nconst ipCount = ipCountData.count || 0;\nconst totalCount = totalCountData.count || 0;\n\nconst MAX_PER_IP = 3;\nconst MAX_TOTAL = 12;\n\nconst quotaExceeded = ipCount >= MAX_PER_IP || totalCount >= MAX_TOTAL;\n\nreturn [{\n  json: {\n    ip: $('Extract Request Context').first().json.ip,\n    date: $('Extract Request Context').first().json.date,\n    ipCount,\n    totalCount,\n    quotaExceeded,\n    quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n    quotaMessage: quotaExceeded\n      ? (ipCount >= MAX_PER_IP\n          ? 'You have reached your daily limit of 3 recipe generations. Please try again tomorrow.'\n          : 'The daily system-wide limit has been reached. Please try again tomorrow.')\n      : ''\n  }\n}];\n"
+        "jsCode": "const ipCountData = $('Get IP Count').first().json || {};\nconst totalCountData = $('Get Total Count').first().json || {};\nconst ipCount = Number(ipCountData.count) || 0;\nconst totalCount = Number(totalCountData.count) || 0;\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 3;\nconst MAX_TOTAL = 12;\nconst ipExceeded = ipCount + RECIPES_PER_REQUEST > MAX_PER_IP;\nconst totalExceeded = totalCount + RECIPES_PER_REQUEST > MAX_TOTAL;\nconst quotaExceeded = ipExceeded || totalExceeded;\nconst remainingRecipes = Math.max(0, Math.min(MAX_PER_IP - ipCount, MAX_TOTAL - totalCount));\nconst quotaMessage = quotaExceeded\n  ? (ipExceeded\n      ? 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.')\n  : `${remainingRecipes} recipes are available today for this network.`;\n\nreturn [{\n  json: {\n    ip: $('Extract Request Context').first().json.ip,\n    ipKey: $('Extract Request Context').first().json.ipKey,\n    date: $('Extract Request Context').first().json.date,\n    ipCount,\n    totalCount,\n    recipesPerRequest: RECIPES_PER_REQUEST,\n    maxPerIp: MAX_PER_IP,\n    maxTotal: MAX_TOTAL,\n    remainingRecipes,\n    quotaExceeded,\n    quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n    quotaMessage,\n  },\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -246,7 +246,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const responseBody = JSON.stringify({ error: 'Quota exceeded', message: $json.quotaMessage });\nreturn [{ json: { responseBody } }];"
+        "jsCode": "const quota = {\n  date: $json.date,\n  perIpLimit: $json.maxPerIp,\n  systemLimit: $json.maxTotal,\n  ipUsed: $json.ipCount,\n  totalUsed: $json.totalCount,\n  remainingRecipes: $json.remainingRecipes,\n  canGenerate: false,\n  message: $json.quotaMessage,\n};\nconst responseBody = JSON.stringify({ error: 'Quota exceeded', message: $json.quotaMessage, quota });\nreturn [{ json: { responseBody } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -301,7 +301,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const checkQuotaData = $('Check Quota').first().json;\n\nconst newIpCount = checkQuotaData.ipCount + 1;\nconst newTotalCount = checkQuotaData.totalCount + 1;\n\nreturn [{\n  json: {\n    ip: checkQuotaData.ip,\n    date: checkQuotaData.date,\n    idToken: $('Sign In For Quota Check').first().json.idToken,\n    ipBody: JSON.stringify({ count: newIpCount }),\n    totalBody: JSON.stringify({ count: newTotalCount }),\n    newIpCount,\n    newTotalCount\n  }\n}];\n"
+        "jsCode": "const quota = $('Check Quota').first().json;\nconst newIpCount = quota.ipCount + quota.recipesPerRequest;\nconst newTotalCount = quota.totalCount + quota.recipesPerRequest;\nconst remainingRecipes = Math.max(0, Math.min(quota.maxPerIp - newIpCount, quota.maxTotal - newTotalCount));\n\nreturn [{\n  json: {\n    ip: quota.ip,\n    ipKey: quota.ipKey,\n    date: quota.date,\n    idToken: $('Sign In For Quota Check').first().json.idToken,\n    quotaBody: JSON.stringify({\n      [`byIp/${quota.ipKey}/count`]: newIpCount,\n      'total/count': newTotalCount,\n    }),\n    newIpCount,\n    newTotalCount,\n    quota: {\n      date: quota.date,\n      perIpLimit: quota.maxPerIp,\n      systemLimit: quota.maxTotal,\n      ipUsed: newIpCount,\n      totalUsed: newTotalCount,\n      remainingRecipes,\n      canGenerate: remainingRecipes >= quota.recipesPerRequest,\n      message: remainingRecipes >= quota.recipesPerRequest\n        ? `${remainingRecipes} recipes are available today for this network.`\n        : 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.',\n    },\n  },\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -312,32 +312,148 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Prepare Quota Increment').first().json.date }}/total.json?auth={{ $('Prepare Quota Increment').first().json.idToken }}\n",
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $json.date }}.json?auth={{ $json.idToken }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $('Prepare Quota Increment').first().json.totalBody }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [1392, 384],
-      "id": "ef527e46-df7d-4be2-9011-4e38b5a73c3f",
-      "name": "Increment Total Count"
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $json.date }}/byIp/{{ $json.ip }}.json?auth={{ $json.idToken }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.ipBody }}",
+        "jsonBody": "={{ $json.quotaBody }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [1168, 384],
       "id": "715da282-3758-44e4-bc8a-7a7fbde4d043",
-      "name": "Increment IP Count"
+      "name": "Increment Quota Counters"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "quota-status",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:4200"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-592, 672],
+      "id": "2f4a663b-89b4-4640-9157-d75d630a7290",
+      "name": "Receive Quota Status Request",
+      "webhookId": "1c5df203-dcac-4780-b82d-5f2e807b30c9"
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $input.first().json;\nconst headers = request.headers || {};\nconst forwardedFor = String(headers['x-forwarded-for'] || '').split(',')[0].trim();\nconst rawIp = forwardedFor || String(headers['x-real-ip'] || '').trim();\n\nfunction parseIpv4(value) {\n  const parts = value.split('.');\n  if (parts.length !== 4 || parts.some((part) => !/^\\d{1,3}$/.test(part))) return null;\n  const numbers = parts.map(Number);\n  if (numbers.some((part) => part < 0 || part > 255)) return null;\n  return numbers.join('.');\n}\n\nfunction parseIpv6(value) {\n  let address = value.toLowerCase();\n  const zoneIndex = address.indexOf('%');\n  if (zoneIndex >= 0) address = address.slice(0, zoneIndex);\n\n  if (address.includes('.')) {\n    const separator = address.lastIndexOf(':');\n    const ipv4 = parseIpv4(address.slice(separator + 1));\n    if (!ipv4) return null;\n    const octets = ipv4.split('.').map(Number);\n    address = `${address.slice(0, separator)}:${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;\n  }\n\n  if (!/^[0-9a-f:]+$/.test(address) || (address.match(/::/g) || []).length > 1) return null;\n  const compressed = address.includes('::');\n  const [leftText, rightText = ''] = address.split('::');\n  const left = leftText ? leftText.split(':') : [];\n  const right = rightText ? rightText.split(':') : [];\n  if ([...left, ...right].some((part) => !/^[0-9a-f]{1,4}$/.test(part))) return null;\n  if (!compressed && left.length !== 8) return null;\n  const missing = 8 - left.length - right.length;\n  if (compressed && missing < 1) return null;\n  const groups = compressed ? [...left, ...Array(missing).fill('0'), ...right] : left;\n  return groups.map((part) => parseInt(part, 16).toString(16)).join(':');\n}\n\nfunction normalizeIp(value) {\n  let candidate = value.trim();\n  const bracketMatch = candidate.match(/^\\[([^\\]]+)](?::\\d+)?$/);\n  if (bracketMatch) candidate = bracketMatch[1];\n  const ipv4WithPort = candidate.match(/^(\\d{1,3}(?:\\.\\d{1,3}){3}):\\d+$/);\n  if (ipv4WithPort) candidate = ipv4WithPort[1];\n  return parseIpv4(candidate) || (candidate.includes(':') ? parseIpv6(candidate) : null);\n}\n\nconst ip = normalizeIp(rawIp);\nconst dateParts = new Intl.DateTimeFormat('en-GB', {\n  timeZone: 'Europe/Berlin',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n}).formatToParts(new Date()).reduce((parts, part) => ({ ...parts, [part.type]: part.value }), {});\nconst date = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;\n\nreturn [{ json: {\n  rawIp,\n  ip: ip || '',\n  ipKey: ip ? ip.replace(/\\./g, '_') : '',\n  ipValid: Boolean(ip),\n  date,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-336, 672],
+      "id": "9351712d-bc4f-47b8-a63e-a96d87ce3c0c",
+      "name": "Extract Quota Status Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3f9a5191-3845-40ce-9198-b34b65d2aa62",
+              "leftValue": "={{ $json.ipValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-80, 672],
+      "id": "540c61b2-4473-4ba7-a62f-db87fcc67430",
+      "name": "Is Quota Status IP Valid?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Invalid client IP', message: 'A valid IPv4 or IPv6 client address is required.' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [176, 816],
+      "id": "f8d49430-80af-4bac-880a-811bb41db6f7",
+      "name": "Respond With Quota IP Error"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCQlEyktPbs1Gt6s93AE16haf6AQvBvIa4",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"returnSecureToken\": true}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [176, 592],
+      "id": "3ab0a72d-f143-4088-8828-dcc5d5b65519",
+      "name": "Sign In For Quota Status"
+    },
+    {
+      "parameters": {
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Quota Status Context').first().json.date }}/total.json?auth={{ $('Sign In For Quota Status').first().json.idToken }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [432, 592],
+      "id": "66468c7d-029c-4a66-9f32-783f4cd3a9da",
+      "name": "Get Quota Status Total"
+    },
+    {
+      "parameters": {
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Quota Status Context').first().json.date }}/byIp/{{ $('Extract Quota Status Context').first().json.ipKey }}.json?auth={{ $('Sign In For Quota Status').first().json.idToken }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [688, 592],
+      "id": "835a0af3-5908-4a92-a54c-9c71c7bb08f3",
+      "name": "Get Quota Status IP"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ipUsed = Number($json.count) || 0;\nconst totalUsed = Number($('Get Quota Status Total').first().json.count) || 0;\nconst perIpLimit = 3;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : (ipUsed >= perIpLimit\n      ? 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{ json: {\n  date: $('Extract Quota Status Context').first().json.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [944, 592],
+      "id": "6887bfd4-c672-473a-a19a-81d9a612a60b",
+      "name": "Build Quota Status"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1200, 592],
+      "id": "6f634bf3-8aed-4a0a-a167-dc2c3d16adb3",
+      "name": "Respond With Quota Status"
     },
     {
       "parameters": {},
@@ -386,7 +502,7 @@
       "main": [
         [
           {
-            "node": "Validate Recipe Request",
+            "node": "Extract Request Context",
             "type": "main",
             "index": 0
           }
@@ -408,7 +524,7 @@
       "main": [
         [
           {
-            "node": "Extract Request Context",
+            "node": "Sign In For Quota Check",
             "type": "main",
             "index": 0
           }
@@ -503,7 +619,7 @@
       "main": [
         [
           {
-            "node": "Prepare Quota Increment",
+            "node": "Respond With Recipes",
             "type": "main",
             "index": 0
           }
@@ -514,7 +630,7 @@
       "main": [
         [
           {
-            "node": "Sign In For Quota Check",
+            "node": "Validate Recipe Request",
             "type": "main",
             "index": 0
           }
@@ -587,7 +703,7 @@
         ],
         [
           {
-            "node": "Generate Recipes",
+            "node": "Prepare Quota Increment",
             "type": "main",
             "index": 0
           }
@@ -598,29 +714,102 @@
       "main": [
         [
           {
-            "node": "Increment IP Count",
+            "node": "Increment Quota Counters",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Increment Total Count": {
+    "Increment Quota Counters": {
       "main": [
         [
           {
-            "node": "Respond With Recipes",
+            "node": "Generate Recipes",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Increment IP Count": {
+    "Receive Quota Status Request": {
       "main": [
         [
           {
-            "node": "Increment Total Count",
+            "node": "Extract Quota Status Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Quota Status Context": {
+      "main": [
+        [
+          {
+            "node": "Is Quota Status IP Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Quota Status IP Valid?": {
+      "main": [
+        [
+          {
+            "node": "Sign In For Quota Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond With Quota IP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign In For Quota Status": {
+      "main": [
+        [
+          {
+            "node": "Get Quota Status Total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Quota Status Total": {
+      "main": [
+        [
+          {
+            "node": "Get Quota Status IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Quota Status IP": {
+      "main": [
+        [
+          {
+            "node": "Build Quota Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Quota Status": {
+      "main": [
+        [
+          {
+            "node": "Respond With Quota Status",
             "type": "main",
             "index": 0
           }

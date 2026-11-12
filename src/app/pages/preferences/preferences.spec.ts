@@ -1,14 +1,75 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { NEVER, of } from 'rxjs';
+import { Recipe } from '../../models/recipe.model';
 import { RecipeDraft } from '../../services/recipe-draft';
+import { QuotaStatus, RecipeGenerator } from '../../services/recipe-generator';
 import { Preferences } from './preferences';
+
+const availableQuota: QuotaStatus = {
+  date: '2026-11-12',
+  perIpLimit: 3,
+  systemLimit: 12,
+  ipUsed: 0,
+  totalUsed: 0,
+  remainingRecipes: 3,
+  canGenerate: true,
+  message: '3 recipes are available today for this network.',
+};
+
+const recipeGeneratorMock = {
+  results: signal<Recipe[]>([]),
+  quotaStatus: signal<QuotaStatus | null>(null),
+  getQuotaStatus: vi.fn(() => of(availableQuota)),
+  generate: vi.fn(() => NEVER),
+};
 
 describe('Preferences', () => {
   beforeEach(async () => {
+    recipeGeneratorMock.results.set([]);
+    recipeGeneratorMock.quotaStatus.set(null);
+    recipeGeneratorMock.getQuotaStatus.mockReset().mockReturnValue(of(availableQuota));
+    recipeGeneratorMock.generate.mockReset().mockReturnValue(NEVER);
+
     await TestBed.configureTestingModule({
       imports: [Preferences],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: RecipeGenerator, useValue: recipeGeneratorMock }],
     }).compileComponents();
+  });
+
+  it('shows the remaining daily recipe quota', () => {
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.quota-status')?.textContent).toContain(
+      '3 of 3 recipes available today',
+    );
+  });
+
+  it('does not generate when the daily quota is exhausted', () => {
+    const exhaustedQuota: QuotaStatus = {
+      ...availableQuota,
+      ipUsed: 3,
+      remainingRecipes: 0,
+      canGenerate: false,
+      message:
+        'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.',
+    };
+    recipeGeneratorMock.getQuotaStatus.mockReturnValue(of(exhaustedQuota));
+
+    const recipeDraft = TestBed.inject(RecipeDraft);
+    setValidDraft(recipeDraft);
+
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+    clickGenerate(fixture.nativeElement);
+    fixture.detectChanges();
+
+    expect(recipeGeneratorMock.generate).not.toHaveBeenCalled();
+    expect(
+      fixture.nativeElement.querySelector('#generation-error-description')?.textContent,
+    ).toContain('daily limit of 3 recipes');
   });
 
   it('shows the error popup when there are not enough ingredients', () => {
@@ -42,13 +103,7 @@ describe('Preferences', () => {
 
   it('shows the loading screen when the recipe request is valid', () => {
     const recipeDraft = TestBed.inject(RecipeDraft);
-    recipeDraft.ingredients.set([
-      { name: 'Pasta', quantity: 400, unit: 'gram' },
-      { name: 'Tomato', quantity: 400, unit: 'gram' },
-    ]);
-    recipeDraft.portions.set(5);
-    recipeDraft.cookingTime.set('Quick');
-    recipeDraft.cuisine.set('Italian');
+    setValidDraft(recipeDraft);
 
     const fixture = TestBed.createComponent(Preferences);
     fixture.detectChanges();
@@ -70,4 +125,15 @@ describe('Preferences', () => {
 function clickGenerate(element: HTMLElement): void {
   const button = element.querySelector<HTMLButtonElement>('.generate-button');
   button?.click();
+}
+
+/** Populates a draft that passes the recipe request validation. */
+function setValidDraft(recipeDraft: RecipeDraft): void {
+  recipeDraft.ingredients.set([
+    { name: 'Pasta', quantity: 400, unit: 'gram' },
+    { name: 'Tomato', quantity: 400, unit: 'gram' },
+  ]);
+  recipeDraft.portions.set(5);
+  recipeDraft.cookingTime.set('Quick');
+  recipeDraft.cuisine.set('Italian');
 }

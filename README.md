@@ -79,6 +79,28 @@ Failed execution data is retained by the workflow for diagnosis. Test the error 
 published/automatic execution (for example, a production webhook call that reaches a temporary
 `Stop And Error` node). n8n does not run `Error Trigger` for manual executions.
 
+## Daily recipe quota
+
+The webhook is exposed through the `quota-gateway` service. The gateway overwrites forwarded IP
+headers with the actual connection address, while n8n serializes production executions so the
+Firebase quota check and update cannot race. Each successful reservation consumes three recipes,
+with limits of three recipes per public IP and twelve recipes system-wide per Berlin calendar day.
+
+After changing `n8n/code-a-cuisine.json`, import and publish the workflow draft:
+
+```bash
+docker compose up -d
+docker compose exec -u node n8n n8n import:workflow --input=/workflows/code-a-cuisine.json
+docker compose exec -u node n8n n8n publish:workflow --id=jbQPlrHD9efaS8X0
+docker compose restart n8n
+```
+
+Validate the quota workflow without making external requests:
+
+```bash
+npm run test:quota
+```
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
