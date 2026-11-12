@@ -77,12 +77,18 @@ published/automatic execution (for example, a production webhook call that reach
 
 The webhook is exposed through the `quota-gateway` service. The gateway overwrites forwarded IP
 headers with the actual connection address, while n8n serializes production executions so the
-quota check and update cannot race. The small daily counters are stored in n8n workflow static data,
-so this educational setup does not need Firebase rules or credentials for quota storage. Each
-successful recipe generation consumes three recipes; failed Gemini or Firebase requests do not
-consume quota. The limits are three generations (nine recipes) per public IP and twelve recipes
-system-wide per Berlin calendar day. Static data is saved by n8n after a successful
-production webhook execution; use the published workflow rather than a manual editor execution.
+quota check and update cannot race. The daily counters are persisted in Firebase Realtime Database
+under `quota/<Berlin date>/byIp/<IP key>/count`. Each
+successful recipe generation consumes three recipes; failed Gemini requests do not consume quota.
+The limits are three generations (nine recipes) per public IP and twelve recipes system-wide per
+Berlin calendar day. The system-wide total is calculated from the per-IP counters, so deleting one
+IP entry in Firebase resets both that IP's allowance and its contribution to the total.
+
+Before publishing this workflow, merge the `quota` child from
+`n8n/firebase-quota-rules-snippet.json` into the existing root rules in Firebase Console under
+**Realtime Database > Rules**, then publish the rules. Do not replace the existing `recipes` rules.
+To reset one network manually, delete `quota/<date>/byIp/<IP key>`. To reset the whole day, delete
+`quota/<date>`.
 
 After changing `n8n/code-a-cuisine.json`, import and publish the workflow draft:
 

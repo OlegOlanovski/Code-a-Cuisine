@@ -1,0 +1,13 @@
+{
+  "quota": {
+    "$date": {
+      "byIp": {
+        ".read": "auth != null",
+        "$ip": {
+          ".write": "auth != null",
+          ".validate": "newData.hasChildren(['count']) && newData.child('count').isNumber() && newData.child('count').val() <= 9 && newData.child('count').val() == (data.child('count').exists() ? data.child('count').val() + 3 : 3)"
+        }
+      }
+    }
+  }
+}

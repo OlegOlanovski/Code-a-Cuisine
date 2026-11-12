@@ -20,7 +20,7 @@ for (const connection of Object.values(workflow.connections)) {
   }
 }
 
-function executeCodeNode(name, input, nodeData = {}, staticData = {}) {
+function executeCodeNode(name, input, nodeData = {}) {
   const code = nodes.get(name)?.parameters?.jsCode;
   assert.ok(code, `Code node ${name} must exist`);
 
@@ -28,15 +28,7 @@ function executeCodeNode(name, input, nodeData = {}, staticData = {}) {
   const inputItems = inputValues.map((json) => ({ json }));
   const $input = { first: () => inputItems[0], all: () => inputItems };
   const $ = (nodeName) => ({ first: () => ({ json: nodeData[nodeName] ?? {} }) });
-  const $getWorkflowStaticData = (scope) => {
-    assert.equal(scope, 'global');
-    return staticData;
-  };
-  return new Function('$input', '$', '$getWorkflowStaticData', code)(
-    $input,
-    $,
-    $getWorkflowStaticData,
-  )[0].json;
+  return new Function('$input', '$', code)($input, $)[0].json;
 }
 
 const ipv4 = executeCodeNode('Extract Request Context', {
@@ -64,53 +56,44 @@ const invalidIp = executeCodeNode('Extract Request Context', {
 });
 assert.equal(invalidIp.ipValid, false);
 
-const staticData = {
-  recipeQuota: { version: 4, date: ipv4.date, total: 0, byIp: {} },
-};
+const dailyQuota = {};
 for (let generation = 0; generation < 3; generation += 1) {
   const availableQuota = executeCodeNode(
     'Check Quota',
-    {},
+    dailyQuota,
     { 'Extract Request Context': ipv4 },
-    staticData,
   );
   assert.equal(availableQuota.recipesPerRequest, 3);
   assert.equal(availableQuota.maxPerIp, 9);
   assert.equal(availableQuota.maxTotal, 12);
   assert.equal(availableQuota.quotaExceeded, false);
-  assert.equal(
-    staticData.recipeQuota.total,
-    generation * 3,
-    'Quota checks must not change counters',
-  );
+  assert.equal(availableQuota.ipCount, generation * 3);
+  assert.equal(availableQuota.totalCount, generation * 3);
 
-  executeCodeNode(
-    'Increment Quota After Success',
-    { id: `generated-recipe-${generation}` },
-    { 'Extract Request Context': ipv4 },
-    staticData,
+  const increment = executeCodeNode(
+    'Prepare Quota Increment',
+    {},
+    {
+      'Check Quota': availableQuota,
+      'Sign In For Quota Check': { idToken: 'test-token' },
+    },
   );
+  dailyQuota[ipv4.ipKey] = JSON.parse(increment.quotaBody);
+  assert.equal(dailyQuota[ipv4.ipKey].count, (generation + 1) * 3);
 }
-assert.equal(staticData.recipeQuota.byIp[ipv4.ipKey], 9);
-assert.equal(staticData.recipeQuota.total, 9);
 
 const exhaustedIpQuota = executeCodeNode(
   'Check Quota',
-  {},
-  {
-    'Extract Request Context': ipv4,
-  },
-  staticData,
+  dailyQuota,
+  { 'Extract Request Context': ipv4 },
 );
 assert.equal(exhaustedIpQuota.quotaExceeded, true);
 assert.match(exhaustedIpQuota.quotaMessage, /daily limit of 9 recipes/);
-assert.equal(staticData.recipeQuota.total, 9, 'Rejected requests must not change counters');
 
 const quotaStatus = executeCodeNode(
   'Build Quota Status',
-  {},
+  dailyQuota,
   { 'Extract Quota Status Context': ipv4 },
-  staticData,
 );
 assert.equal(quotaStatus.ipUsed, 9);
 assert.equal(quotaStatus.totalUsed, 9);
@@ -118,25 +101,25 @@ assert.equal(quotaStatus.canGenerate, false);
 
 const exhaustedSystemQuota = executeCodeNode(
   'Check Quota',
-  {},
+  {
+    first_ip: { count: 3 },
+    second_ip: { count: 3 },
+    third_ip: { count: 3 },
+    fourth_ip: { count: 3 },
+  },
   { 'Extract Request Context': ipv4 },
-  { recipeQuota: { version: 4, date: ipv4.date, total: 12, byIp: {} } },
 );
 assert.equal(exhaustedSystemQuota.quotaExceeded, true);
 assert.match(exhaustedSystemQuota.quotaMessage, /system-wide limit of 12 recipes/);
 
-const legacyStaticData = {
-  recipeQuota: { date: ipv4.date, total: 3, byIp: { [ipv4.ipKey]: 3 } },
-};
+delete dailyQuota[ipv4.ipKey];
 const resetQuotaStatus = executeCodeNode(
   'Build Quota Status',
-  {},
+  dailyQuota,
   { 'Extract Quota Status Context': ipv4 },
-  legacyStaticData,
 );
 assert.equal(resetQuotaStatus.ipUsed, 0);
 assert.equal(resetQuotaStatus.totalUsed, 0);
-assert.equal(legacyStaticData.recipeQuota.version, 4);
 
 const nginxConfig = readFileSync(new URL('../n8n/nginx.conf', import.meta.url), 'utf8');
 assert.match(nginxConfig, /proxy_set_header X-Forwarded-For \$remote_addr;/);
@@ -145,26 +128,38 @@ assert.equal(
   workflow.connections['Is Quota Available?'].main[1][0].node,
   'Generate Recipes',
 );
-assert.equal(workflow.connections['Is Request Valid?'].main[0][0].node, 'Check Quota');
-assert.equal(workflow.connections['Is Quota Status IP Valid?'].main[0][0].node, 'Build Quota Status');
+assert.equal(workflow.connections['Is Request Valid?'].main[0][0].node, 'Sign In For Quota Check');
+assert.equal(workflow.connections['Sign In For Quota Check'].main[0][0].node, 'Get Daily Quota');
+assert.equal(workflow.connections['Get Daily Quota'].main[0][0].node, 'Check Quota');
 assert.equal(
-  workflow.connections['Attach Firebase ID'].main[0][0].node,
-  'Increment Quota After Success',
+  workflow.connections['Is Quota Status IP Valid?'].main[0][0].node,
+  'Sign In For Quota Status',
 );
 assert.equal(
-  workflow.connections['Increment Quota After Success'].main[0][0].node,
+  workflow.connections['Sign In For Quota Status'].main[0][0].node,
+  'Get Quota Status Daily',
+);
+assert.equal(workflow.connections['Get Quota Status Daily'].main[0][0].node, 'Build Quota Status');
+assert.equal(
+  workflow.connections['Attach Firebase ID'].main[0][0].node,
+  'Prepare Quota Increment',
+);
+assert.equal(
+  workflow.connections['Prepare Quota Increment'].main[0][0].node,
+  'Save Quota to Firebase',
+);
+assert.equal(
+  workflow.connections['Save Quota to Firebase'].main[0][0].node,
   'Combine Final Recipes',
 );
 for (const removedNode of [
-  'Sign In For Quota Check',
   'Get IP Count',
   'Get Total Count',
-  'Prepare Quota Increment',
   'Increment IP Count',
   'Increment Total Count',
-  'Sign In For Quota Status',
   'Get Quota Status Total',
   'Get Quota Status IP',
+  'Increment Quota After Success',
 ]) {
   assert.equal(nodes.has(removedNode), false, `${removedNode} should not exist`);
 }
