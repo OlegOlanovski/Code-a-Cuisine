@@ -56,16 +56,10 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 
 ## n8n error handling and logging
 
-The workflow in `n8n/code-a-cuisine.json` contains its own error workflow:
+The workflow in `n8n/code-a-cuisine.json` contains its own error logging workflow:
 
 1. `On Workflow Error` receives failures from automatic executions.
-2. `Format and Log Error` writes a structured `n8n_workflow_error` entry to the container output and prepares the notification.
-3. `Email Error Notification` retries SMTP delivery up to three times.
-
-Before publishing the workflow, open `Email Error Notification` in n8n and:
-
-- select or create an SMTP credential;
-- replace `n8n@example.com` and `ops@example.com` with the real sender and recipient.
+2. `Format and Log Error` writes a structured `n8n_workflow_error` entry to the container output.
 
 The Docker setup writes n8n logs both to the container console and to the persistent
 `/home/node/.n8n/logs/n8n.log` file. Follow either output with:
@@ -83,8 +77,12 @@ published/automatic execution (for example, a production webhook call that reach
 
 The webhook is exposed through the `quota-gateway` service. The gateway overwrites forwarded IP
 headers with the actual connection address, while n8n serializes production executions so the
-Firebase quota check and update cannot race. Each successful reservation consumes three recipes,
-with limits of three recipes per public IP and twelve recipes system-wide per Berlin calendar day.
+quota check and update cannot race. The small daily counters are stored in n8n workflow static data,
+so this educational setup does not need Firebase rules or credentials for quota storage. Each
+successful recipe generation consumes three recipes; failed Gemini or Firebase requests do not
+consume quota. The limits are three generations (nine recipes) per public IP and twelve recipes
+system-wide per Berlin calendar day. Static data is saved by n8n after a successful
+production webhook execution; use the published workflow rather than a manual editor execution.
 
 After changing `n8n/code-a-cuisine.json`, import and publish the workflow draft:
 

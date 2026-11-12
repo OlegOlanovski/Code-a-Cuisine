@@ -9,13 +9,13 @@ import { Preferences } from './preferences';
 
 const availableQuota: QuotaStatus = {
   date: '2026-11-12',
-  perIpLimit: 3,
+  perIpLimit: 9,
   systemLimit: 12,
   ipUsed: 0,
   totalUsed: 0,
-  remainingRecipes: 3,
+  remainingRecipes: 9,
   canGenerate: true,
-  message: '3 recipes are available today for this network.',
+  message: '9 recipes are available today for this network.',
 };
 
 const recipeGeneratorMock = {
@@ -43,18 +43,18 @@ describe('Preferences', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.quota-status')?.textContent).toContain(
-      '3 of 3 recipes available today',
+      '9 of 9 recipes available today',
     );
   });
 
   it('does not generate when the daily quota is exhausted', () => {
     const exhaustedQuota: QuotaStatus = {
       ...availableQuota,
-      ipUsed: 3,
+      ipUsed: 9,
       remainingRecipes: 0,
       canGenerate: false,
       message:
-        'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.',
+        'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.',
     };
     recipeGeneratorMock.getQuotaStatus.mockReturnValue(of(exhaustedQuota));
 
@@ -69,7 +69,7 @@ describe('Preferences', () => {
     expect(recipeGeneratorMock.generate).not.toHaveBeenCalled();
     expect(
       fixture.nativeElement.querySelector('#generation-error-description')?.textContent,
-    ).toContain('daily limit of 3 recipes');
+    ).toContain('daily limit of 9 recipes');
   });
 
   it('shows the error popup when there are not enough ingredients', () => {

@@ -85,10 +85,9 @@
     },
     {
       "parameters": {
-        "modelName": "models/gemini-3.8-flash",
+        "modelName": "models/gemini-3.5-flash",
         "options": {
-          "maxOutputTokens": 8192,
-          "temperature": 0.4
+          "maxOutputTokens": 8192
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
@@ -165,13 +164,23 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst quota = $('Prepare Quota Increment').first().json.quota;\nconst responseBody = JSON.stringify({ recipes: items.map((item) => item.json), quota });\nreturn [{ json: { responseBody } }];"
+        "jsCode": "const items = $input.all();\nconst context = $('Extract Request Context').first().json;\nconst storage = $getWorkflowStaticData('global');\nconst counters = storage.recipeQuota;\nconst perIpLimit = 9;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nconst ipUsed = Number(counters.byIp[context.ipKey]) || 0;\nconst totalUsed = Number(counters.total) || 0;\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.';\nconst quota = {\n  date: context.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n};\nconst responseBody = JSON.stringify({ recipes: items.map((item) => item.json), quota });\nreturn [{ json: { responseBody } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1504, 160],
+      "position": [1696, 160],
       "id": "cbaf21f7-1c41-4782-974b-19dac81e5ae5",
       "name": "Combine Final Recipes"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst context = $('Extract Request Context').first().json;\nconst storage = $getWorkflowStaticData('global');\nconst STORAGE_VERSION = 4;\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 9;\nconst MAX_TOTAL = 12;\n\nif (storage.recipeQuota?.version !== STORAGE_VERSION || storage.recipeQuota.date !== context.date) {\n  storage.recipeQuota = { version: STORAGE_VERSION, date: context.date, total: 0, byIp: {} };\n}\n\nconst counters = storage.recipeQuota;\nconst currentIpCount = Number(counters.byIp[context.ipKey]) || 0;\nconst currentTotalCount = Number(counters.total) || 0;\nif (currentIpCount + RECIPES_PER_REQUEST > MAX_PER_IP || currentTotalCount + RECIPES_PER_REQUEST > MAX_TOTAL) {\n  throw new Error('Quota changed while the recipes were being generated.');\n}\n\ncounters.byIp[context.ipKey] = currentIpCount + RECIPES_PER_REQUEST;\ncounters.total = currentTotalCount + RECIPES_PER_REQUEST;\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1456, 160],
+      "id": "a44f1227-687e-4f72-b302-40553e43239c",
+      "name": "Increment Quota After Success"
     },
     {
       "parameters": {
@@ -199,48 +208,11 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCQlEyktPbs1Gt6s93AE16haf6AQvBvIa4",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"returnSecureToken\": true}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [-528, 176],
-      "id": "a8962b1d-2cfd-4e1b-a943-d422fbd480b7",
-      "name": "Sign In For Quota Check"
-    },
-    {
-      "parameters": {
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Request Context').first().json.date }}/byIp/{{ $('Extract Request Context').first().json.ipKey }}.json?auth={{ $('Sign In For Quota Check').first().json.idToken }}\n",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [96, 176],
-      "id": "f4754830-f3a3-480d-95b7-eb6c20fd017c",
-      "name": "Get IP Count"
-    },
-    {
-      "parameters": {
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Request Context').first().json.date }}/total.json?auth={{ $json.idToken }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [-96, 176],
-      "id": "20757f83-3815-469f-9f50-515d6228ddc0",
-      "name": "Get Total Count"
-    },
-    {
-      "parameters": {
-        "jsCode": "const ipCountData = $('Get IP Count').first().json || {};\nconst totalCountData = $('Get Total Count').first().json || {};\nconst ipCount = Number(ipCountData.count) || 0;\nconst totalCount = Number(totalCountData.count) || 0;\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 3;\nconst MAX_TOTAL = 12;\nconst ipExceeded = ipCount + RECIPES_PER_REQUEST > MAX_PER_IP;\nconst totalExceeded = totalCount + RECIPES_PER_REQUEST > MAX_TOTAL;\nconst quotaExceeded = ipExceeded || totalExceeded;\nconst remainingRecipes = Math.max(0, Math.min(MAX_PER_IP - ipCount, MAX_TOTAL - totalCount));\nconst quotaMessage = quotaExceeded\n  ? (ipExceeded\n      ? 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.')\n  : `${remainingRecipes} recipes are available today for this network.`;\n\nreturn [{\n  json: {\n    ip: $('Extract Request Context').first().json.ip,\n    ipKey: $('Extract Request Context').first().json.ipKey,\n    date: $('Extract Request Context').first().json.date,\n    ipCount,\n    totalCount,\n    recipesPerRequest: RECIPES_PER_REQUEST,\n    maxPerIp: MAX_PER_IP,\n    maxTotal: MAX_TOTAL,\n    remainingRecipes,\n    quotaExceeded,\n    quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n    quotaMessage,\n  },\n}];\n"
+        "jsCode": "const context = $('Extract Request Context').first().json;\nconst storage = $getWorkflowStaticData('global');\nconst STORAGE_VERSION = 4;\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 9;\nconst MAX_TOTAL = 12;\n\nif (storage.recipeQuota?.version !== STORAGE_VERSION || storage.recipeQuota.date !== context.date) {\n  storage.recipeQuota = { version: STORAGE_VERSION, date: context.date, total: 0, byIp: {} };\n}\n\nconst counters = storage.recipeQuota;\nconst ipCount = Number(counters.byIp[context.ipKey]) || 0;\nconst totalCount = Number(counters.total) || 0;\nconst ipExceeded = ipCount + RECIPES_PER_REQUEST > MAX_PER_IP;\nconst totalExceeded = totalCount + RECIPES_PER_REQUEST > MAX_TOTAL;\nconst quotaExceeded = ipExceeded || totalExceeded;\nconst remainingRecipes = Math.max(0, Math.min(MAX_PER_IP - ipCount, MAX_TOTAL - totalCount));\nconst quotaMessage = quotaExceeded\n  ? (ipExceeded\n      ? 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.')\n  : `${remainingRecipes} recipes are available today for this network.`;\n\nconst quota = {\n  date: context.date,\n  perIpLimit: MAX_PER_IP,\n  systemLimit: MAX_TOTAL,\n  ipUsed: ipCount,\n  totalUsed: totalCount,\n  remainingRecipes,\n  canGenerate: !quotaExceeded,\n  message: quotaMessage,\n};\n\nreturn [{ json: {\n  ip: context.ip,\n  ipKey: context.ipKey,\n  date: context.date,\n  ipCount,\n  totalCount,\n  recipesPerRequest: RECIPES_PER_REQUEST,\n  maxPerIp: MAX_PER_IP,\n  maxTotal: MAX_TOTAL,\n  remainingRecipes,\n  quotaExceeded,\n  quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n  quotaMessage,\n  quota,\n} }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-544, 416],
+      "position": [-352, 416],
       "id": "59012022-453f-4883-b544-45e95e10063d",
       "name": "Check Quota"
     },
@@ -298,31 +270,6 @@
       "position": [-96, 416],
       "id": "7b8477a8-d10b-4995-bd4b-56c021e2572e",
       "name": "Is Quota Available?"
-    },
-    {
-      "parameters": {
-        "jsCode": "const quota = $('Check Quota').first().json;\nconst newIpCount = quota.ipCount + quota.recipesPerRequest;\nconst newTotalCount = quota.totalCount + quota.recipesPerRequest;\nconst remainingRecipes = Math.max(0, Math.min(quota.maxPerIp - newIpCount, quota.maxTotal - newTotalCount));\n\nreturn [{\n  json: {\n    ip: quota.ip,\n    ipKey: quota.ipKey,\n    date: quota.date,\n    idToken: $('Sign In For Quota Check').first().json.idToken,\n    quotaBody: JSON.stringify({\n      [`byIp/${quota.ipKey}/count`]: newIpCount,\n      'total/count': newTotalCount,\n    }),\n    newIpCount,\n    newTotalCount,\n    quota: {\n      date: quota.date,\n      perIpLimit: quota.maxPerIp,\n      systemLimit: quota.maxTotal,\n      ipUsed: newIpCount,\n      totalUsed: newTotalCount,\n      remainingRecipes,\n      canGenerate: remainingRecipes >= quota.recipesPerRequest,\n      message: remainingRecipes >= quota.recipesPerRequest\n        ? `${remainingRecipes} recipes are available today for this network.`\n        : 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.',\n    },\n  },\n}];\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [944, 384],
-      "id": "b2ec49a9-b895-458d-9964-dcab92698ebc",
-      "name": "Prepare Quota Increment"
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $json.date }}.json?auth={{ $json.idToken }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.quotaBody }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [1168, 384],
-      "id": "715da282-3758-44e4-bc8a-7a7fbde4d043",
-      "name": "Increment Quota Counters"
     },
     {
       "parameters": {
@@ -396,48 +343,11 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCQlEyktPbs1Gt6s93AE16haf6AQvBvIa4",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"returnSecureToken\": true}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [176, 592],
-      "id": "3ab0a72d-f143-4088-8828-dcc5d5b65519",
-      "name": "Sign In For Quota Status"
-    },
-    {
-      "parameters": {
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Quota Status Context').first().json.date }}/total.json?auth={{ $('Sign In For Quota Status').first().json.idToken }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [432, 592],
-      "id": "66468c7d-029c-4a66-9f32-783f4cd3a9da",
-      "name": "Get Quota Status Total"
-    },
-    {
-      "parameters": {
-        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/quota/{{ $('Extract Quota Status Context').first().json.date }}/byIp/{{ $('Extract Quota Status Context').first().json.ipKey }}.json?auth={{ $('Sign In For Quota Status').first().json.idToken }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [688, 592],
-      "id": "835a0af3-5908-4a92-a54c-9c71c7bb08f3",
-      "name": "Get Quota Status IP"
-    },
-    {
-      "parameters": {
-        "jsCode": "const ipUsed = Number($json.count) || 0;\nconst totalUsed = Number($('Get Quota Status Total').first().json.count) || 0;\nconst perIpLimit = 3;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : (ipUsed >= perIpLimit\n      ? 'You have reached your daily limit of 3 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{ json: {\n  date: $('Extract Quota Status Context').first().json.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n} }];"
+        "jsCode": "const context = $('Extract Quota Status Context').first().json;\nconst storage = $getWorkflowStaticData('global');\nconst STORAGE_VERSION = 4;\nconst perIpLimit = 9;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nif (storage.recipeQuota?.version !== STORAGE_VERSION || storage.recipeQuota.date !== context.date) {\n  storage.recipeQuota = { version: STORAGE_VERSION, date: context.date, total: 0, byIp: {} };\n}\nconst counters = storage.recipeQuota;\nconst ipUsed = Number(counters.byIp?.[context.ipKey]) || 0;\nconst totalUsed = Number(counters.total) || 0;\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : (ipUsed >= perIpLimit\n      ? 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{ json: {\n  date: context.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [944, 592],
+      "position": [240, 592],
       "id": "6887bfd4-c672-473a-a19a-81d9a612a60b",
       "name": "Build Quota Status"
     },
@@ -472,28 +382,6 @@
       "position": [-336, 912],
       "id": "bd2a3dfa-84c6-4af2-a6bc-c86b049ebbc0",
       "name": "Format and Log Error"
-    },
-    {
-      "parameters": {
-        "resource": "email",
-        "operation": "send",
-        "fromEmail": "n8n@example.com",
-        "toEmail": "ops@example.com",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $json.text }}",
-        "options": {
-          "appendAttribution": false
-        }
-      },
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [-80, 912],
-      "id": "2c698231-7a47-4570-ad4a-c8c98ab9af3a",
-      "name": "Email Error Notification",
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000
     }
   ],
   "pinData": {},
@@ -524,7 +412,7 @@
       "main": [
         [
           {
-            "node": "Sign In For Quota Check",
+            "node": "Check Quota",
             "type": "main",
             "index": 0
           }
@@ -608,6 +496,17 @@
       "main": [
         [
           {
+            "node": "Increment Quota After Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Quota After Success": {
+      "main": [
+        [
+          {
             "node": "Combine Final Recipes",
             "type": "main",
             "index": 0
@@ -631,39 +530,6 @@
         [
           {
             "node": "Validate Recipe Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sign In For Quota Check": {
-      "main": [
-        [
-          {
-            "node": "Get Total Count",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Total Count": {
-      "main": [
-        [
-          {
-            "node": "Get IP Count",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get IP Count": {
-      "main": [
-        [
-          {
-            "node": "Check Quota",
             "type": "main",
             "index": 0
           }
@@ -703,28 +569,6 @@
         ],
         [
           {
-            "node": "Prepare Quota Increment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Quota Increment": {
-      "main": [
-        [
-          {
-            "node": "Increment Quota Counters",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Increment Quota Counters": {
-      "main": [
-        [
-          {
             "node": "Generate Recipes",
             "type": "main",
             "index": 0
@@ -758,7 +602,7 @@
       "main": [
         [
           {
-            "node": "Sign In For Quota Status",
+            "node": "Build Quota Status",
             "type": "main",
             "index": 0
           }
@@ -766,39 +610,6 @@
         [
           {
             "node": "Respond With Quota IP Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sign In For Quota Status": {
-      "main": [
-        [
-          {
-            "node": "Get Quota Status Total",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Quota Status Total": {
-      "main": [
-        [
-          {
-            "node": "Get Quota Status IP",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Quota Status IP": {
-      "main": [
-        [
-          {
-            "node": "Build Quota Status",
             "type": "main",
             "index": 0
           }
@@ -821,17 +632,6 @@
         [
           {
             "node": "Format and Log Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format and Log Error": {
-      "main": [
-        [
-          {
-            "node": "Email Error Notification",
             "type": "main",
             "index": 0
           }
