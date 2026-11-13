@@ -95,6 +95,15 @@
   }
 }
 
+.results-copy > .results-quota {
+  padding: 10px 14px;
+  color: var(--middle-green);
+  font-size: 16px;
+  line-height: 22px;
+  background: var(--cream);
+  border-radius: 10px;
+}
+
 .results-hero {
   display: block;
   width: 100%;

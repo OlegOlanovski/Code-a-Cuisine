@@ -39,8 +39,17 @@
   }
 }
 
+.preferences-header-row {
+  display: flex;
+  width: 100%;
+  min-height: 28px;
+  align-items: center;
+  gap: 24px;
+}
+
 .back-link {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 10px;
   color: var(--middle-green);
@@ -52,6 +61,29 @@
   span {
     font-size: 24px;
     line-height: 10px;
+  }
+}
+
+.quota-summary {
+  display: flex;
+  width: 220px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: flex-start;
+  color: var(--middle-green);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: left;
+
+  button {
+    padding: 4px 0;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
   }
 }
 
@@ -390,6 +422,16 @@
   .preferences-header {
     height: auto;
     padding: 24px;
+  }
+
+  .preferences-header-row {
+    min-height: 40px;
+    gap: 16px;
+  }
+
+  .quota-summary {
+    width: 150px;
+    min-height: 40px;
   }
 
   .preferences-main {

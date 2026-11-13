@@ -38,12 +38,14 @@ describe('Preferences', () => {
     }).compileComponents();
   });
 
-  it('does not show the remaining daily recipe quota', () => {
+  it('shows the remaining daily recipe quota', () => {
     const fixture = TestBed.createComponent(Preferences);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.quota-status')).toBeNull();
-    expect(fixture.nativeElement.textContent).not.toContain('9 of 9 recipes available today');
+    expect(fixture.nativeElement.querySelector('.quota-summary')?.textContent).toContain(
+      'Recipes left today: 9',
+    );
+    expect(fixture.nativeElement.querySelector('.preferences-main .quota-summary')).toBeNull();
   });
 
   it('does not generate when the daily quota is exhausted', () => {
