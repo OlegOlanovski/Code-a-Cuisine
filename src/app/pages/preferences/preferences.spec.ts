@@ -45,7 +45,7 @@ describe('Preferences', () => {
     expect(fixture.nativeElement.querySelector('.quota-summary')?.textContent).toContain(
       'Recipes left today: 9',
     );
-    expect(fixture.nativeElement.querySelector('.preferences-main .quota-summary')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.generate-action .quota-summary')).toBeTruthy();
   });
 
   it('does not generate when the daily quota is exhausted', () => {

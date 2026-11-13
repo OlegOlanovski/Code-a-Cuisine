@@ -7,22 +7,10 @@
         <img src="/images/logo.png" alt="Code à Cuisine" />
       </a>
 
-      <div class="preferences-header-row">
-        <a class="back-link" routerLink="/generate-recipe">
-          <span aria-hidden="true">←</span>
-          Ingredients
-        </a>
-
-        <aside class="quota-summary" aria-live="polite">
-          @if (isQuotaLoading()) {
-            <span>Checking recipe availability…</span>
-          } @else if (quotaStatus(); as quota) {
-            <span>Recipes left today: {{ quota.remainingRecipes }}</span>
-          } @else {
-            <button type="button" (click)="refreshQuotaStatus()">Check recipe availability</button>
-          }
-        </aside>
-      </div>
+      <a class="back-link" routerLink="/generate-recipe">
+        <span aria-hidden="true">←</span>
+        Ingredients
+      </a>
     </header>
 
     <main class="preferences-main">
@@ -123,9 +111,21 @@
         </div>
       </section>
 
-      <button class="generate-button" type="button" (click)="generateRecipe()">
-        Generate a recipe
-      </button>
+      <div class="generate-action">
+        <button class="generate-button" type="button" (click)="generateRecipe()">
+          Generate a recipe
+        </button>
+
+        <aside class="quota-summary" aria-live="polite">
+          @if (isQuotaLoading()) {
+            <span>Checking recipe availability…</span>
+          } @else if (quotaStatus(); as quota) {
+            <span>Recipes left today: {{ quota.remainingRecipes }}</span>
+          } @else {
+            <button type="button" (click)="refreshQuotaStatus()">Check recipe availability</button>
+          }
+        </aside>
+      </div>
     </main>
 
     @if (isErrorPopupOpen()) {
