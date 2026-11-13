@@ -16,23 +16,6 @@
     <main class="preferences-main">
       <h1>Choose your preferences</h1>
 
-      <aside class="quota-status" aria-live="polite">
-        @if (isQuotaLoading()) {
-          <span>Checking today’s recipe quota…</span>
-        } @else if (quotaStatus(); as quota) {
-          <span>
-            {{ quota.remainingRecipes }} of {{ quota.perIpLimit }} recipes available today for your
-            network.
-          </span>
-          @if (!quota.canGenerate) {
-            <strong>{{ quota.message }}</strong>
-          }
-        } @else {
-          <span>Today’s quota is currently unavailable.</span>
-          <button type="button" (click)="refreshQuotaStatus()">Try again</button>
-        }
-      </aside>
-
       <section class="preferences-content" aria-label="Recipe preferences">
         <div class="counter-grid">
           <div class="counter-group">

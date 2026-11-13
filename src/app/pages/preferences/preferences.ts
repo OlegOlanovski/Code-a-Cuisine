@@ -35,7 +35,6 @@ export class Preferences implements OnInit {
   protected readonly isGenerating = signal(false);
   protected readonly generationErrorMessage = signal<string | null>(null);
   protected readonly quotaStatus = this.recipeGenerator.quotaStatus;
-  protected readonly isQuotaLoading = signal(true);
 
   /** Loads the daily allowance for the request's public IP address. */
   ngOnInit(): void {
@@ -150,17 +149,12 @@ export class Preferences implements OnInit {
   }
 
   /** Refreshes the quota without consuming a recipe generation. */
-  protected refreshQuotaStatus(): void {
-    this.isQuotaLoading.set(true);
-
+  private refreshQuotaStatus(): void {
     this.recipeGenerator.getQuotaStatus().subscribe({
       next: (quota) => {
         this.recipeGenerator.quotaStatus.set(quota);
-        this.isQuotaLoading.set(false);
       },
-      error: () => {
-        this.isQuotaLoading.set(false);
-      },
+      error: () => undefined,
     });
   }
 

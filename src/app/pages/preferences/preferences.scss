@@ -79,34 +79,6 @@
   gap: 32px;
 }
 
-.quota-status {
-  display: flex;
-  width: 100%;
-  padding: 14px 18px;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: var(--dark-green);
-  text-align: center;
-  background: var(--cream);
-  border: 1px solid rgb(57 96 57 / 35%);
-  border-radius: 12px;
-
-  strong {
-    width: 100%;
-  }
-
-  button {
-    padding: 4px 10px;
-    color: var(--cream);
-    cursor: pointer;
-    background: var(--olive-green);
-    border: 0;
-    border-radius: 5px;
-  }
-}
-
 .counter-grid {
   display: grid;
   grid-template-columns: 290px 263px;
