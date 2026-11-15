@@ -48,6 +48,46 @@ describe('Preferences', () => {
     expect(fixture.nativeElement.querySelector('.generate-action .quota-summary')).toBeTruthy();
   });
 
+  it('uses the checklist cooking-time range for the medium option', () => {
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('20-45min');
+    expect(fixture.nativeElement.textContent).not.toContain('25-40min');
+  });
+
+  it('limits the number of cooks to three', () => {
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const increaseButton = element.querySelector<HTMLButtonElement>(
+      '[aria-label="Increase cooks"]',
+    );
+
+    for (let click = 0; click < 4; click += 1) {
+      increaseButton?.click();
+    }
+    fixture.detectChanges();
+
+    const cooksOutput = increaseButton?.parentElement?.querySelector('output');
+    expect(cooksOutput?.textContent?.trim()).toBe('3');
+  });
+
+  it('generates a recipe with one valid ingredient', () => {
+    const recipeDraft = TestBed.inject(RecipeDraft);
+    recipeDraft.ingredients.set([{ name: 'Potato', quantity: 800, unit: 'gram' }]);
+    recipeDraft.portions.set(5);
+    recipeDraft.cookingTime.set('Quick');
+    recipeDraft.cuisine.set('German');
+
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+    clickGenerate(fixture.nativeElement);
+
+    expect(recipeGeneratorMock.generate).toHaveBeenCalledOnce();
+  });
+
   it('does not generate when the daily quota is exhausted', () => {
     const exhaustedQuota: QuotaStatus = {
       ...availableQuota,

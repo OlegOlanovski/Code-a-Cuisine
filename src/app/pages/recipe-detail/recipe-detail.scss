@@ -69,9 +69,10 @@
 
 .recipe-summary {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(310px, 1fr);
+  grid-template-columns: minmax(0, 619px) 339px;
   align-items: center;
-  gap: 72px;
+  justify-content: space-between;
+  gap: 0;
   padding: 24px;
   background: var(--cream);
   border-radius: 20px;
@@ -125,9 +126,9 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 2px 6px;
+  padding: 2px 4px;
   color: var(--dark-green);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   line-height: 22px;
   white-space: nowrap;
@@ -135,7 +136,7 @@
   border-radius: 6px;
 
   img {
-    width: 24px;
+    width: 26px;
     height: 22px;
     object-fit: contain;
   }
@@ -192,17 +193,18 @@
 
 .nutrition {
   width: 100%;
+  padding-left: 8px;
 
   > p {
-    margin: 0 0 10px;
-    font-size: 17px;
+    margin: 0 0 8px;
+    font-size: 18px;
     font-weight: 500;
   }
 
   dl {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 20px;
+    grid-template-columns: 82px 77px 38px 62px;
+    gap: 24px;
     margin: 0;
   }
 
@@ -214,13 +216,15 @@
   }
 
   dt {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
+    text-align: center;
   }
 
   dd {
     margin: 0;
-    font-size: 17px;
+    font-size: 20px;
+    text-align: center;
     white-space: nowrap;
   }
 }
@@ -228,7 +232,11 @@
 .recipe-section {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 0;
+}
+
+.recipe-section + .recipe-section {
+  margin-top: -48px;
 }
 
 .section-banner,
@@ -253,9 +261,9 @@
   min-width: 0;
 
   h3 {
-    margin: 0 0 20px;
+    margin: 0 0 24px;
     color: #008000;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 600;
     text-align: center;
   }
@@ -271,9 +279,9 @@
     grid-template-columns: minmax(72px, auto) 1fr;
     gap: 10px;
     margin-bottom: 6px;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 500;
-    line-height: 1.25;
+    line-height: 30px;
   }
 
   li::before {
@@ -289,19 +297,20 @@
 
 .directions-grid {
   display: grid;
+  width: min(100%, 864px);
+  margin: 0 auto;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 38px 64px;
-  padding: 0 112px;
+  gap: 40px 64px;
 }
 
 .direction-step {
   min-width: 0;
 
   > p {
-    margin: 22px 0 0;
-    font-size: 16px;
+    margin: 32px 0 0;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 1.35;
+    line-height: 22px;
   }
 
   .waiting-time {
@@ -320,9 +329,9 @@
   h3 {
     margin: 0;
     color: var(--olive-green);
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 500;
-    line-height: 1.25;
+    line-height: 30px;
   }
 }
 
@@ -333,7 +342,7 @@
   align-items: center;
   justify-content: center;
   color: var(--dark-green);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   background: var(--cream);
   border-radius: 50%;
@@ -343,7 +352,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 24px;
   text-align: center;
 
   p {
@@ -352,7 +361,7 @@
   }
 
   strong {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   button {
@@ -486,6 +495,7 @@
   }
 
   .directions-grid {
+    width: 100%;
     padding: 0 32px;
   }
 }
@@ -509,6 +519,10 @@
     border-width: 3px;
   }
 
+  .recipe-section + .recipe-section {
+    margin-top: -36px;
+  }
+
   .recipe-summary {
     padding: 20px 16px;
   }
@@ -519,6 +533,10 @@
 
   .nutrition dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nutrition {
+    padding-left: 0;
   }
 
   .ingredients-grid,

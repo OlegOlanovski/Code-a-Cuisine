@@ -56,13 +56,36 @@ const invalidIp = executeCodeNode('Extract Request Context', {
 });
 assert.equal(invalidIp.ipValid, false);
 
+const validRecipeRequest = {
+  ...ipv4,
+  body: {
+    ingredients: [{ name: 'Potato', quantity: 800, unit: 'gram' }],
+    servings: 5,
+    timeCategory: 'medium',
+    cuisine: 'german',
+    diet: 'none',
+    helperCount: 3,
+  },
+};
+const validRequest = executeCodeNode('Validate Recipe Request', validRecipeRequest);
+assert.equal(validRequest.isValid, true);
+
+const tooManyHelpersRequest = executeCodeNode('Validate Recipe Request', {
+  ...validRecipeRequest,
+  body: { ...validRecipeRequest.body, helperCount: 4 },
+});
+assert.equal(tooManyHelpersRequest.isValid, false);
+assert.ok(
+  tooManyHelpersRequest.validationErrors.includes(
+    'Helper count must be an integer between 1 and 3.',
+  ),
+);
+
 const dailyQuota = {};
 for (let generation = 0; generation < 3; generation += 1) {
-  const availableQuota = executeCodeNode(
-    'Check Quota',
-    dailyQuota,
-    { 'Extract Request Context': ipv4 },
-  );
+  const availableQuota = executeCodeNode('Check Quota', dailyQuota, {
+    'Extract Request Context': ipv4,
+  });
   assert.equal(availableQuota.recipesPerRequest, 3);
   assert.equal(availableQuota.maxPerIp, 9);
   assert.equal(availableQuota.maxTotal, 12);
@@ -82,19 +105,15 @@ for (let generation = 0; generation < 3; generation += 1) {
   assert.equal(dailyQuota[ipv4.ipKey].count, (generation + 1) * 3);
 }
 
-const exhaustedIpQuota = executeCodeNode(
-  'Check Quota',
-  dailyQuota,
-  { 'Extract Request Context': ipv4 },
-);
+const exhaustedIpQuota = executeCodeNode('Check Quota', dailyQuota, {
+  'Extract Request Context': ipv4,
+});
 assert.equal(exhaustedIpQuota.quotaExceeded, true);
 assert.match(exhaustedIpQuota.quotaMessage, /daily limit of 9 recipes/);
 
-const quotaStatus = executeCodeNode(
-  'Build Quota Status',
-  dailyQuota,
-  { 'Extract Quota Status Context': ipv4 },
-);
+const quotaStatus = executeCodeNode('Build Quota Status', dailyQuota, {
+  'Extract Quota Status Context': ipv4,
+});
 assert.equal(quotaStatus.ipUsed, 9);
 assert.equal(quotaStatus.totalUsed, 9);
 assert.equal(quotaStatus.canGenerate, false);
@@ -113,21 +132,16 @@ assert.equal(exhaustedSystemQuota.quotaExceeded, true);
 assert.match(exhaustedSystemQuota.quotaMessage, /system-wide limit of 12 recipes/);
 
 delete dailyQuota[ipv4.ipKey];
-const resetQuotaStatus = executeCodeNode(
-  'Build Quota Status',
-  dailyQuota,
-  { 'Extract Quota Status Context': ipv4 },
-);
+const resetQuotaStatus = executeCodeNode('Build Quota Status', dailyQuota, {
+  'Extract Quota Status Context': ipv4,
+});
 assert.equal(resetQuotaStatus.ipUsed, 0);
 assert.equal(resetQuotaStatus.totalUsed, 0);
 
 const nginxConfig = readFileSync(new URL('../n8n/nginx.conf', import.meta.url), 'utf8');
 assert.match(nginxConfig, /proxy_set_header X-Forwarded-For \$remote_addr;/);
 
-assert.equal(
-  workflow.connections['Is Quota Available?'].main[1][0].node,
-  'Generate Recipes',
-);
+assert.equal(workflow.connections['Is Quota Available?'].main[1][0].node, 'Generate Recipes');
 assert.equal(workflow.connections['Is Request Valid?'].main[0][0].node, 'Sign In For Quota Check');
 assert.equal(workflow.connections['Sign In For Quota Check'].main[0][0].node, 'Get Daily Quota');
 assert.equal(workflow.connections['Get Daily Quota'].main[0][0].node, 'Check Quota');
@@ -140,10 +154,7 @@ assert.equal(
   'Get Quota Status Daily',
 );
 assert.equal(workflow.connections['Get Quota Status Daily'].main[0][0].node, 'Build Quota Status');
-assert.equal(
-  workflow.connections['Attach Firebase ID'].main[0][0].node,
-  'Prepare Quota Increment',
-);
+assert.equal(workflow.connections['Attach Firebase ID'].main[0][0].node, 'Prepare Quota Increment');
 assert.equal(
   workflow.connections['Prepare Quota Increment'].main[0][0].node,
   'Save Quota to Firebase',

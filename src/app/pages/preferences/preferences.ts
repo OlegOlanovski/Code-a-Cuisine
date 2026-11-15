@@ -11,7 +11,7 @@ import { RecipeGenerator } from '../../services/recipe-generator';
   styleUrl: './preferences.scss',
 })
 export class Preferences implements OnInit {
-  private readonly minimumIngredientCount = 2;
+  private readonly minimumIngredientCount = 1;
   private readonly minimumAmountPerPortion = 150;
   private readonly recipeDraft = inject(RecipeDraft);
   private readonly recipeGenerator = inject(RecipeGenerator);
@@ -25,7 +25,7 @@ export class Preferences implements OnInit {
 
   protected readonly cookingTimes = [
     { label: 'Quick', description: 'up to 20min' },
-    { label: 'Medium', description: '25-40min' },
+    { label: 'Medium', description: '20-45min' },
     { label: 'Complex', description: 'over 45min' },
   ];
 
@@ -57,7 +57,7 @@ export class Preferences implements OnInit {
    * @param amount - Signed amount added to the current cook count.
    */
   protected changeCooks(amount: number): void {
-    this.cooks.update((value) => Math.min(4, Math.max(1, value + amount)));
+    this.cooks.update((value) => Math.min(3, Math.max(1, value + amount)));
   }
 
   /**
