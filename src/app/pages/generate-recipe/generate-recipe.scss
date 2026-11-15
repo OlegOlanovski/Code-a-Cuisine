@@ -32,8 +32,6 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: brightness(0) saturate(100%) invert(31%) sepia(15%) saturate(1283%) hue-rotate(71deg)
-      brightness(90%) contrast(89%);
   }
 }
 
@@ -474,35 +472,138 @@
 }
 
 @media (max-width: 620px) {
+  .generator-page {
+    min-height: 812px;
+  }
+
   .generator-header {
-    height: auto;
-    padding: 24px;
+    height: 52px;
+    padding: 12px 16px 8px;
+  }
+
+  .generator-logo {
+    width: 95px;
+    height: 32px;
   }
 
   .generator-main {
-    width: min(calc(100% - 32px), 1087px);
-    margin-top: 56px;
+    width: min(calc(100% - 32px), 340px);
+    margin-top: 40px;
     gap: 40px;
   }
 
   .generator-intro {
-    gap: 16px;
+    width: min(100%, 327px);
+    align-items: flex-start;
+    gap: 24px;
+    text-align: left;
+
+    h1 {
+      font-size: 32px;
+      line-height: 40px;
+    }
+
+    p {
+      width: 100%;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 23px;
+    }
+  }
+
+  .generator-workspace {
+    gap: 24px;
   }
 
   .ingredient-card {
-    padding: 24px;
-    grid-template-columns: 1fr;
+    display: flex;
+    min-height: 211px;
+    padding: 25px 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ingredient-card--autocomplete,
+  .ingredient-card--unit-menu {
+    min-height: 300px;
+  }
+
+  .field {
+    > span,
+    > label {
+      font-size: 18px;
+      line-height: 22px;
+    }
+
+    input,
+    select {
+      font-size: 18px;
+      line-height: 22px;
+    }
+  }
+
+  .ingredient-field {
+    width: 300px;
+    max-width: calc(100% - 40px);
+    gap: 11px;
+  }
+
+  .serving-field {
+    width: 295px;
+    max-width: calc(100% - 40px);
+    gap: 16px;
   }
 
   .serving-controls {
-    grid-template-columns: 72px minmax(92px, 1fr) 40px;
+    width: 185px;
   }
 
   .quantity-input {
+    width: 61px;
+
+    &::placeholder {
+      color: var(--dark-green);
+      opacity: 0.3;
+    }
+  }
+
+  .measurement-menu {
     width: 72px;
+    padding: 4px 0;
+    border-radius: 0 0 18px 18px;
+
+    button {
+      width: 100%;
+      height: 28px;
+      padding: 4px 11px;
+      border-radius: 48px;
+    }
+  }
+
+  .ingredients-card {
+    min-height: 130px;
+    padding: 24px 16px;
+
+    h2 {
+      font-size: 18px;
+      line-height: 22px;
+    }
   }
 
   .next-button {
-    width: 100%;
+    width: 106px;
+    min-width: 0;
+    height: 52px;
+    min-height: 0;
+    align-self: center;
+    gap: 0;
+    padding: 4px 16px;
+    font-size: 16px;
+    line-height: 20px;
+
+    span {
+      display: none;
+    }
   }
 }

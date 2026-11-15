@@ -1,7 +1,7 @@
 <div class="generator-page">
   <header class="generator-header">
     <a class="generator-logo" routerLink="/" aria-label="Back to Code à Cuisine home">
-      <img src="/images/logo.png" alt="Code à Cuisine" />
+      <img src="/images/recipe-detail/logo-dark.png" alt="Code à Cuisine" />
     </a>
   </header>
 
@@ -14,7 +14,8 @@
     <div class="generator-workspace">
       <form
         class="ingredient-card"
-        [class.ingredient-card--autocomplete]="isIngredientMenuOpen"
+        [class.ingredient-card--autocomplete]="isIngredientMenuOpen && !isUnitMenuOpen"
+        [class.ingredient-card--unit-menu]="isUnitMenuOpen"
         (ngSubmit)="addIngredient()"
       >
         <div class="field ingredient-field">
@@ -45,7 +46,7 @@
               </p>
             }
 
-            @if (isIngredientMenuOpen) {
+            @if (isIngredientMenuOpen && !isUnitMenuOpen) {
               <ul class="ingredient-suggestions" role="listbox">
                 @for (suggestion of filteredIngredientSuggestions; track suggestion) {
                   <li>
