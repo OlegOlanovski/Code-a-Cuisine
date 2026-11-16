@@ -408,6 +408,10 @@
   border: 0;
 }
 
+.mobile-popup-break {
+  display: none;
+}
+
 @keyframes error-popup-move-in {
   from {
     transform: translateX(-100vw);
@@ -419,6 +423,10 @@
 }
 
 @media (max-width: 760px) {
+  .error-popup-backdrop {
+    padding: 16px;
+  }
+
   .preferences-header {
     height: 140px;
     padding: 12px 16px 0;
@@ -520,24 +528,52 @@
   }
 
   .error-popup {
-    height: auto;
-    min-height: 345px;
-    padding: 32px 24px 40px;
+    width: min(100%, 340px);
+    height: 314px;
+    min-height: 0;
+    padding: 16px 24px 24px;
   }
 
-  .error-popup-content,
+  .error-popup-content {
+    height: 250px;
+  }
+
   .error-popup-copy {
-    height: auto;
+    height: 174px;
   }
 
-  .error-popup-copy h2,
+  .error-popup-copy h2 {
+    height: 70px;
+  }
+
   .error-popup-copy p {
-    height: auto;
+    height: 80px;
+    font-family: 'Mulish', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 20px;
   }
 
   .error-popup-action {
-    width: min(100%, 299px);
-    padding-inline: 18px;
+    width: min(100%, 254px);
+    padding: 4px 16px;
+    font-size: 18px;
+    line-height: 22px;
+
+    svg {
+      width: 20px;
+      flex-basis: 20px;
+    }
+  }
+
+  .mobile-popup-break {
+    display: initial;
+  }
+
+  .generation-error-popup {
+    height: auto;
+    min-height: 345px;
+    padding: 32px 24px 40px;
   }
 }
 
