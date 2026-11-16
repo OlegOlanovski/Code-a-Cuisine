@@ -19,7 +19,6 @@ export class Results {
   };
 
   protected readonly recipes = this.recipeGenerator.results;
-  protected readonly quotaStatus = this.recipeGenerator.quotaStatus;
 
   /** Derives the display label for the generated recipes' cuisine. */
   protected readonly cuisine = computed(() => {

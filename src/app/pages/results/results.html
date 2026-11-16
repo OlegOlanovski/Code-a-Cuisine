@@ -29,13 +29,6 @@
             <span>{{ cuisine() }}</span>
             <span>{{ cookingTime() }}</span>
           </div>
-
-          @if (quotaStatus(); as quota) {
-            <p class="results-quota" aria-live="polite">
-              {{ quota.remainingRecipes }} of {{ quota.perIpLimit }} recipes remain available today
-              for your network.
-            </p>
-          }
         </div>
 
         <img class="results-hero" src="/images/results/robo.png" alt="" aria-hidden="true" />

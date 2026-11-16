@@ -7,7 +7,7 @@
   --middle-green: #1e5515;
   --dark-green: #10310b;
   --cream: #faf0e6;
-  --card-green: #dbe0db;
+  --card-green: #d7dfd7;
 
   min-height: 100svh;
   color: var(--cream);
@@ -93,15 +93,6 @@
     background: var(--cream);
     border-radius: 30px;
   }
-}
-
-.results-copy > .results-quota {
-  padding: 10px 14px;
-  color: var(--middle-green);
-  font-size: 16px;
-  line-height: 22px;
-  background: var(--cream);
-  border-radius: 10px;
 }
 
 .results-hero {
@@ -302,14 +293,19 @@
 
 @media (max-width: 600px) {
   .results-header {
-    height: auto;
-    padding: 24px;
+    height: 44px;
+    padding: 12px 16px 0;
+
+    img {
+      width: 95px;
+      height: 32px;
+    }
   }
 
   .results-main {
-    width: min(calc(100% - 32px), 760px);
-    margin-top: 48px;
-    padding-bottom: 48px;
+    width: min(calc(100% - 32px), 340px);
+    margin-top: 40px;
+    padding-bottom: 40px;
   }
 
   .desktop-title {
@@ -321,36 +317,81 @@
   }
 
   .results-copy {
-    gap: 18px;
+    display: contents;
 
     h1 {
-      font-size: 36px;
-      line-height: 44px;
+      width: 100%;
+      order: 0;
+      font-size: 32px;
+      line-height: 40px;
     }
 
     > p {
+      width: 100%;
+      min-height: 69px;
+      order: 2;
       font-size: 18px;
-      line-height: 26px;
+      line-height: 22px;
     }
   }
 
   .results-intro {
-    gap: 32px;
+    display: flex;
+    height: 320px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .results-hero {
+    width: 340px;
+    height: 131px;
+    order: 1;
+    aspect-ratio: auto;
+  }
+
+  .results-tags {
+    order: 3;
   }
 
   .results-cards {
-    gap: 20px;
+    height: 914px;
+    gap: 16px;
     margin-top: 48px;
+    background: rgb(57 96 57 / 20%);
+    border-radius: 20px;
   }
 
   .recipe-card {
-    min-height: 310px;
+    width: 340px;
+    height: 294px;
+    min-height: 294px;
+    gap: 32px;
+  }
+
+  .recipe-card-content {
+    height: 146px;
+    flex: 0 0 146px;
   }
 
   .recipe-card h2 {
-    min-height: auto;
-    font-size: 28px;
-    line-height: 35px;
+    min-height: 60px;
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .recipe-card-time {
+    gap: 4px;
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  .recipe-card-view {
+    min-width: 68px;
+    min-height: 52px;
+    margin-top: 0;
+    padding: 4px 16px;
+    font-size: 16px;
+    line-height: 20px;
   }
 
   .results-footer {
@@ -359,7 +400,17 @@
   }
 
   .generate-again-link {
-    width: 100%;
+    width: 237px;
+    height: 52px;
+    padding: 4px 16px;
+    font-size: 18px;
+    line-height: 22px;
+
+    span:last-child {
+      width: 20px;
+      font-size: 28px;
+      line-height: 20px;
+    }
   }
 }
 
