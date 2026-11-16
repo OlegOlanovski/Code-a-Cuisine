@@ -11,7 +11,7 @@ const PIECE_UNITS = new Set(['piece', 'pieces', 'pc', 'pcs', 'stück', 'stueck']
   selector: 'app-recipe-detail',
   imports: [RouterLink],
   templateUrl: './recipe-detail.html',
-  styleUrl: './recipe-detail.scss',
+  styleUrls: ['./recipe-detail.scss', './recipe-detail-mobile.scss'],
 })
 export class RecipeDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -23,6 +23,8 @@ export class RecipeDetail implements OnInit {
   protected readonly likeErrorMessage = signal('');
   protected readonly isLiking = signal(false);
   protected readonly liked = signal(false);
+  protected readonly ingredientsExpanded = signal(true);
+  protected readonly directionsExpanded = signal(true);
 
   /** Loads the recipe identified by the current route. */
   async ngOnInit(): Promise<void> {
