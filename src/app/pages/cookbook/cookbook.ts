@@ -56,7 +56,7 @@ export class Cookbook implements OnInit {
     },
     {
       name: 'Fusion cuisine',
-      emoji: '🍡',
+      emoji: '🍢',
       image: '/images/cookbook/fusion.png',
       slug: 'fusion',
     },
