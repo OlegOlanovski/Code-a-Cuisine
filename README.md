@@ -1,110 +1,222 @@
-# CodeACuisine
+# Code à Cuisine
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.1.
+Code à Cuisine is an AI-powered recipe generator that turns available ingredients into three personalized recipe suggestions. Users can choose serving size, cooking time, cuisine, dietary preferences, and the number of people cooking. Generated recipes are stored in Firebase and are available to everyone through the public cookbook.
 
-## Development server
+Repository: [github.com/OlegOlanovski/Code-a-Cuisine](https://github.com/OlegOlanovski/Code-a-Cuisine)
 
-To start a local development server, run:
+## Features
 
-```bash
-ng serve
+- Ingredient entry with quantity, unit, autocomplete, editing, and removal
+- Recipe preferences for 1–12 portions and 1–3 cooks
+- Quick, medium, and complex cooking-time categories
+- German, Italian, Indian, Japanese, Gourmet, and Fusion cuisines
+- Vegetarian, vegan, keto, and unrestricted diets
+- Three AI-generated recipe suggestions per request
+- Chef assignments, parallel-step metadata, and waiting times
+- Nutrition information per serving and for the complete recipe in the stored data
+- Public Firebase recipe library with cuisine categories, likes, and pagination
+- IP-based and system-wide recipe quotas enforced by n8n
+- Responsive layouts for smartphone, tablet, desktop, and widescreen displays
+- Accessible loading, validation, empty, and error states
+
+## Technology
+
+- Angular 22 and TypeScript
+- SCSS
+- Firebase Authentication and Realtime Database
+- n8n workflow automation
+- Google Gemini
+- Docker Compose and nginx
+- Vitest
+
+## Architecture
+
+```text
+Angular frontend
+      |
+      v
+nginx quota gateway
+      |
+      v
+n8n workflow ----> Google Gemini
+      |
+      v
+Firebase Realtime Database
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The Angular application sends ingredients and preferences to the n8n webhook. The workflow validates the request, checks the daily quota, generates exactly three recipes with Gemini, stores them in Firebase, updates the quota, and returns the saved recipes to the frontend.
 
-## Code scaffolding
+## Requirements
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Node.js 22 or newer
+- npm 11 or newer
+- Docker with Docker Compose
+- Firebase project with Anonymous Authentication and Realtime Database enabled
+- Google Gemini credentials configured in n8n
 
-```bash
-ng generate component component-name
-```
+## Installation
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Clone the repository and install the dependencies:
 
 ```bash
-ng build
+git clone https://github.com/OlegOlanovski/Code-a-Cuisine.git
+cd Code-a-Cuisine
+npm install
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Frontend configuration
 
-## Running unit tests
+Local environment files are intentionally excluded from Git. Create both files:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+- `src/environments/environment.ts`
+- `src/environments/environment.development.ts`
+
+Use this structure and insert the public configuration from your Firebase project:
+
+```ts
+export const environment = {
+  production: false,
+  n8nWebhookUrl: 'http://localhost:5679/webhook/generate-recipes',
+  firebase: {
+    apiKey: 'YOUR_FIREBASE_API_KEY',
+    authDomain: 'YOUR_PROJECT.firebaseapp.com',
+    databaseURL: 'https://YOUR_DATABASE.firebasedatabase.app',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT.firebasestorage.app',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    appId: 'YOUR_APP_ID',
+  },
+};
+```
+
+Set `production: true` in `environment.ts`. For a deployed application, also replace `n8nWebhookUrl` with the public HTTPS address of the quota gateway.
+
+## Firebase setup
+
+1. Create a Firebase project.
+2. Enable **Authentication > Sign-in method > Anonymous**.
+3. Create a Realtime Database in the appropriate region.
+4. Add the Firebase web-app configuration to both Angular environment files.
+5. Configure database access for `recipes`.
+6. Merge the `quota` child from `n8n/firebase-quota-rules-snippet.json` into the existing Realtime Database rules and publish them.
+
+Do not replace the existing `recipes` rules when adding the quota rules.
+
+## n8n setup
+
+Start n8n and the quota gateway:
 
 ```bash
-ng test
+docker compose up -d
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+Open n8n through the local instance, configure the Google Gemini credential, and import the workflow:
 
 ```bash
-ng e2e
+docker compose exec -u node n8n \
+  n8n import:workflow --input=/workflows/code-a-cuisine.json
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Publish the imported workflow and restart n8n:
 
-## n8n error handling and logging
+```bash
+docker compose exec -u node n8n \
+  n8n publish:workflow --id=jbQPlrHD9efaS8X0
+docker compose restart n8n
+```
 
-The workflow in `n8n/code-a-cuisine.json` contains its own error logging workflow:
+The frontend communicates with the gateway at `http://localhost:5679`. The gateway replaces forwarded IP headers with the real connection address before forwarding requests to n8n.
 
-1. `On Workflow Error` receives failures from automatic executions.
-2. `Format and Log Error` writes a structured `n8n_workflow_error` entry to the container output.
+### CORS for deployment
 
-The Docker setup writes n8n logs both to the container console and to the persistent
-`/home/node/.n8n/logs/n8n.log` file. Follow either output with:
+The exported workflow currently permits `http://localhost:4200`. Before deployment, update `allowedOrigins` for both webhook nodes in `n8n/code-a-cuisine.json` to the final frontend domain, then import and publish the workflow again.
+
+## Development
+
+Start the Angular development server:
+
+```bash
+npm start
+```
+
+Open [http://localhost:4200](http://localhost:4200).
+
+The complete local application requires the Angular server, n8n container, quota gateway, Firebase configuration, and published n8n workflow to be available.
+
+## Tests
+
+Run the Angular unit tests once:
+
+```bash
+npm test -- --watch=false
+```
+
+Validate the n8n quota workflow without making external API requests:
+
+```bash
+npm run test:quota
+```
+
+## Production build
+
+```bash
+npm run build
+```
+
+The optimized frontend is written to `dist/code-a-cuisine`.
+
+## Daily quota
+
+The quota is tracked by public IP address and Berlin calendar date. IPv4 and IPv6 addresses are normalized and validated. The gateway prevents clients from spoofing forwarded IP headers, and n8n serializes production executions to prevent concurrent quota updates from racing.
+
+Current workflow limits:
+
+- Three recipes are generated per successful request
+- Nine recipes per public IP per day
+- Twelve recipes across the whole system per day
+
+Quota data is stored under:
+
+```text
+quota/<YYYY-MM-DD>/byIp/<normalized-IP>/count
+```
+
+Deleting one IP entry resets that network's allowance. Deleting the date entry resets the complete daily quota.
+
+## Error logging
+
+Failed workflow execution data is retained by n8n. The exported workflow includes `On Workflow Error` and `Format and Log Error` nodes intended to create a structured `n8n_workflow_error` entry. Container logs are also persisted to `/home/node/.n8n/logs/n8n.log`.
 
 ```bash
 docker compose logs -f n8n
 docker compose exec n8n tail -f /home/node/.n8n/logs/n8n.log
 ```
 
-Failed execution data is retained by the workflow for diagnosis. Test the error path through a
-published/automatic execution (for example, a production webhook call that reaches a temporary
-`Stop And Error` node). n8n does not run `Error Trigger` for manual executions.
+The n8n Error Trigger only runs for automatic or production executions, not manual editor executions.
 
-## Daily recipe quota
+## Repository structure
 
-The webhook is exposed through the `quota-gateway` service. The gateway overwrites forwarded IP
-headers with the actual connection address, while n8n serializes production executions so the
-quota check and update cannot race. The daily counters are persisted in Firebase Realtime Database
-under `quota/<Berlin date>/byIp/<IP key>/count`. Each
-successful recipe generation consumes three recipes; failed Gemini requests do not consume quota.
-The limits are three generations (nine recipes) per public IP and twelve recipes system-wide per
-Berlin calendar day. The system-wide total is calculated from the per-IP counters, so deleting one
-IP entry in Firebase resets both that IP's allowance and its contribution to the total.
-
-Before publishing this workflow, merge the `quota` child from
-`n8n/firebase-quota-rules-snippet.json` into the existing root rules in Firebase Console under
-**Realtime Database > Rules**, then publish the rules. Do not replace the existing `recipes` rules.
-To reset one network manually, delete `quota/<date>/byIp/<IP key>`. To reset the whole day, delete
-`quota/<date>`.
-
-After changing `n8n/code-a-cuisine.json`, import and publish the workflow draft:
-
-```bash
-docker compose up -d
-docker compose exec -u node n8n n8n import:workflow --input=/workflows/code-a-cuisine.json
-docker compose exec -u node n8n n8n publish:workflow --id=jbQPlrHD9efaS8X0
-docker compose restart n8n
+```text
+src/app/                    Angular application
+src/app/pages/              Application pages
+src/app/services/           Firebase and recipe-generation services
+src/app/models/             Shared recipe data model
+public/                     Images, icons, and loading animation
+n8n/code-a-cuisine.json     Exported n8n workflow
+n8n/nginx.conf              IP-preserving quota gateway
+scripts/                    Workflow checks and seed data
+compose.yaml                Local n8n and nginx services
 ```
 
-Validate the quota workflow without making external requests:
+## Available scripts
 
-```bash
-npm run test:quota
-```
+| Command                     | Description                           |
+| --------------------------- | ------------------------------------- |
+| `npm start`                 | Start the Angular development server  |
+| `npm run build`             | Create an optimized production build  |
+| `npm test -- --watch=false` | Run Angular unit tests once           |
+| `npm run test:quota`        | Validate quota and workflow structure |
 
-## Additional Resources
+## License
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+This project was created as an educational project for the Code à Cuisine assignment.
