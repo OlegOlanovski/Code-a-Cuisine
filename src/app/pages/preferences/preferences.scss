@@ -422,6 +422,13 @@
   }
 }
 
+@media (min-width: 1440px) {
+  .preferences-header {
+    width: 1440px;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 760px) {
   .error-popup-backdrop {
     padding: 16px;

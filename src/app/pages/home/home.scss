@@ -147,6 +147,87 @@
   }
 }
 
+@media (min-width: 1440px) {
+  .hero-page {
+    height: 100svh;
+  }
+
+  .header {
+    width: 1440px;
+    margin: 0 auto;
+  }
+
+  .hero {
+    width: 1440px;
+    min-height: calc(100svh - 136px);
+    margin: 0 auto;
+    padding: 104px 40px 80px 65px;
+  }
+
+  .hero__content {
+    width: 755px;
+  }
+
+  .hero__heading {
+    width: 755px;
+
+    p {
+      width: 755px;
+      font-size: 48px;
+      line-height: 60px;
+    }
+
+    h1 {
+      width: 755px;
+      font-size: 104px;
+      line-height: 119px;
+      letter-spacing: normal;
+    }
+  }
+
+  .primary-button {
+    height: 60px;
+    min-height: 60px;
+    padding-block: 15px;
+    line-height: 30px;
+  }
+
+  .hero__visuals {
+    top: -42px;
+    right: auto;
+    left: calc(50% + 90px);
+    width: auto;
+    height: 1734px;
+    max-width: none;
+    opacity: 1;
+  }
+
+  .secondary-cta {
+    bottom: 126px;
+    left: calc(50% - 655px);
+    width: 594px;
+    height: 52px;
+
+    h2 {
+      width: 342px;
+      font-size: 32px;
+      line-height: 1.04;
+    }
+
+    a {
+      width: 236px;
+      height: 52px;
+      justify-content: center;
+      white-space: nowrap;
+
+      span {
+        width: 24px;
+        flex: 0 0 24px;
+      }
+    }
+  }
+}
+
 @media (max-width: 1100px) {
   .hero__content {
     width: 65%;

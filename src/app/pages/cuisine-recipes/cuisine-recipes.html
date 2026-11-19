@@ -36,7 +36,7 @@
           <li class="recipe-item">
             <div class="recipe-content">
               <span class="recipe-number">
-                {{ $index + 1 + (currentPage() - 1) * itemsPerPage }}.
+                {{ $index + 1 + (currentPage() - 1) * itemsPerPage() }}.
               </span>
 
               <a class="recipe-main" [routerLink]="['/recipe', recipe.id]">
@@ -100,7 +100,10 @@
     }
 
     <div class="generate-row">
-      <a routerLink="/generate-recipe">Generate recipe</a>
+      <a routerLink="/generate-recipe">
+        <span class="generate-label generate-label--desktop">Generate a recipe</span>
+        <span class="generate-label generate-label--mobile">Generate recipe</span>
+      </a>
     </div>
   </main>
 </div>

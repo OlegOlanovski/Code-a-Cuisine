@@ -488,6 +488,13 @@
   border: 0;
 }
 
+@media (min-width: 1440px) {
+  .recipe-header {
+    width: 1440px;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 1100px) {
   .recipe-main {
     width: min(calc(100% - 64px), 900px);

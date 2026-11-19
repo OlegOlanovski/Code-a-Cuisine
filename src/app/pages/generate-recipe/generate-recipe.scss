@@ -461,6 +461,13 @@
   }
 }
 
+@media (min-width: 1440px) {
+  .generator-header {
+    width: 1440px;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 900px) {
   .generator-workspace {
     grid-template-columns: 1fr;

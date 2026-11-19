@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, HostListener, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -54,7 +54,7 @@ export class CuisineRecipes {
   private readonly route = inject(ActivatedRoute);
   private readonly recipesService = inject(Recipes);
 
-  protected readonly itemsPerPage = 9;
+  protected readonly itemsPerPage = signal(this.resolveItemsPerPage());
   protected readonly recipes = signal<Recipe[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
@@ -79,13 +79,13 @@ export class CuisineRecipes {
 
   /** Calculates the number of recipe pages available. */
   protected readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.recipes().length / this.itemsPerPage)),
+    Math.max(1, Math.ceil(this.recipes().length / this.itemsPerPage())),
   );
 
   /** Selects the recipes displayed on the current page. */
   protected readonly pagedRecipes = computed(() => {
-    const start = (this.currentPage() - 1) * this.itemsPerPage;
-    return this.recipes().slice(start, start + this.itemsPerPage);
+    const start = (this.currentPage() - 1) * this.itemsPerPage();
+    return this.recipes().slice(start, start + this.itemsPerPage());
   });
 
   /** Builds the compact pagination model, including ellipsis markers. */
@@ -131,6 +131,17 @@ export class CuisineRecipes {
       this.isLoading.set(true);
       void this.loadRecipes(cuisine);
     });
+  }
+
+  /** Keeps pagination aligned with the mobile and desktop design variants. */
+  @HostListener('window:resize')
+  protected updateItemsPerPage(): void {
+    const nextItemsPerPage = this.resolveItemsPerPage();
+
+    if (nextItemsPerPage !== this.itemsPerPage()) {
+      this.itemsPerPage.set(nextItemsPerPage);
+      this.currentPage.set(1);
+    }
   }
 
   /**
@@ -188,5 +199,12 @@ export class CuisineRecipes {
    */
   private capitalize(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  /** Resolves the page size used by the active responsive layout. */
+  private resolveItemsPerPage(): number {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches
+      ? 9
+      : 15;
   }
 }
