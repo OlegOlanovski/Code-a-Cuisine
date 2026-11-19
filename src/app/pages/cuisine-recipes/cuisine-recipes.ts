@@ -54,7 +54,7 @@ export class CuisineRecipes {
   private readonly route = inject(ActivatedRoute);
   private readonly recipesService = inject(Recipes);
 
-  protected readonly itemsPerPage = 15;
+  protected readonly itemsPerPage = 9;
   protected readonly recipes = signal<Recipe[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
@@ -92,25 +92,26 @@ export class CuisineRecipes {
   protected readonly pageNumbers = computed<(number | 'ellipsis')[]>(() => {
     const total = this.totalPages();
     const current = this.currentPage();
-    const pages: (number | 'ellipsis')[] = [1];
+    const visiblePages = new Set([1, total, current - 1, current, current + 1]);
 
-    if (current > 3) {
-      pages.push('ellipsis');
+    if (current <= 3) {
+      visiblePages.add(2);
+      visiblePages.add(3);
     }
 
-    for (let page = Math.max(2, current - 1); page <= Math.min(total - 1, current + 1); page++) {
-      pages.push(page);
+    if (current >= total - 2) {
+      visiblePages.add(total - 2);
+      visiblePages.add(total - 1);
     }
 
-    if (current < total - 2) {
-      pages.push('ellipsis');
-    }
+    const sortedPages = [...visiblePages]
+      .filter((page) => page >= 1 && page <= total)
+      .sort((firstPage, secondPage) => firstPage - secondPage);
 
-    if (total > 1) {
-      pages.push(total);
-    }
-
-    return pages;
+    return sortedPages.flatMap((page, index) => {
+      const previousPage = sortedPages[index - 1];
+      return index > 0 && page - previousPage > 1 ? ['ellipsis', page] : [page];
+    });
   });
 
   /** Watches the selected cuisine and reloads its recipes when it changes. */

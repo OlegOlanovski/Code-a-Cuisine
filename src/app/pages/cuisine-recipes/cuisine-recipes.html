@@ -11,10 +11,6 @@
   </header>
 
   <main class="cuisine-main">
-    <div class="generate-row">
-      <a routerLink="/generate-recipe">Generate a recipe</a>
-    </div>
-
     @if (cuisineInfo(); as info) {
       <picture class="cuisine-hero">
         <source media="(max-width: 600px)" [srcset]="info.mobileImage" />
@@ -38,17 +34,19 @@
       <ol class="recipe-list">
         @for (recipe of pagedRecipes(); track recipe.id) {
           <li class="recipe-item">
-            <span class="recipe-number">
-              {{ $index + 1 + (currentPage() - 1) * itemsPerPage }}.
-            </span>
-
-            <a class="recipe-main" [routerLink]="['/recipe', recipe.id]">
-              <span class="recipe-time">
-                <img src="/images/recipe-detail/schedule.svg" alt="" aria-hidden="true" />
-                Cooking time: {{ recipe.cookingTime }}min
+            <div class="recipe-content">
+              <span class="recipe-number">
+                {{ $index + 1 + (currentPage() - 1) * itemsPerPage }}.
               </span>
-              <span class="recipe-title">{{ recipe.name }}</span>
-            </a>
+
+              <a class="recipe-main" [routerLink]="['/recipe', recipe.id]">
+                <span class="recipe-time">
+                  <img src="/images/recipe-detail/schedule.svg" alt="" aria-hidden="true" />
+                  Cooking time: {{ recipe.cookingTime }}min
+                </span>
+                <span class="recipe-title">{{ recipe.name }}</span>
+              </a>
+            </div>
 
             <div class="recipe-tags">
               @for (tag of displayTags(recipe); track tag) {
@@ -71,7 +69,7 @@
             [disabled]="currentPage() === 1"
             (click)="goToPage(currentPage() - 1)"
           >
-            ‹
+            &lt;
           </button>
 
           @for (page of pageNumbers(); track $index) {
@@ -95,10 +93,14 @@
             [disabled]="currentPage() === totalPages()"
             (click)="goToPage(currentPage() + 1)"
           >
-            ›
+            &gt;
           </button>
         </nav>
       }
     }
+
+    <div class="generate-row">
+      <a routerLink="/generate-recipe">Generate recipe</a>
+    </div>
   </main>
 </div>
