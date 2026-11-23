@@ -1,0 +1,10 @@
+{
+  "generationRequests": {
+    ".read": true,
+    ".write": true,
+    ".indexOn": ["status"],
+    "$requestId": {
+      ".validate": "!newData.exists() || (newData.hasChildren(['ownerId', 'status', 'createdAt', 'updatedAt', 'payload']) && newData.child('ownerId').isString() && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'processing' || newData.child('status').val() === 'completed' || newData.child('status').val() === 'failed'))"
+    }
+  }
+}

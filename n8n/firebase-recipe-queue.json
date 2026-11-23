@@ -1,0 +1,195 @@
+{
+  "name": "Firebase Recipe Queue",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "2d7abfd5-e4de-4664-9c14-3441b16fb92f",
+      "name": "Every 10 Seconds",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-800, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/generationRequests.json?orderBy=%22status%22&equalTo=%22pending%22&limitToFirst=1",
+        "options": {}
+      },
+      "id": "aecb3bbe-bdd9-424a-ad56-600423885440",
+      "name": "Get Pending Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-352, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const requests = $input.first().json || {};\nconst entries = Object.entries(requests);\n\nif (entries.length === 0) {\n  return [];\n}\n\nentries.sort(([, first], [, second]) =>\n  (Number(first?.createdAt) || 0) - (Number(second?.createdAt) || 0),\n);\n\nconst [requestId, record] = entries[0];\nconst ownerId = String(record.ownerId || '');\nlet hash = 2166136261;\nconst groups = ['fd00'];\n\nfor (let groupIndex = 0; groupIndex < 7; groupIndex += 1) {\n  let value = 0;\n\n  for (const character of ownerId) {\n    hash ^= character.charCodeAt(0) + groupIndex;\n    hash = Math.imul(hash, 16777619) >>> 0;\n    value = (value + hash) >>> 0;\n  }\n\n  groups.push((value & 0xffff).toString(16));\n}\n\nreturn [{\n  json: {\n    requestId,\n    ownerId,\n    quotaIp: groups.join(':'),\n    payload: record.payload || {},\n  },\n}];"
+      },
+      "id": "d60b7114-f9d8-49b3-85ad-35b4039036e1",
+      "name": "Select Pending Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-128, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/generationRequests/{{ $json.requestId }}.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: 'processing', updatedAt: Date.now() } }}",
+        "options": {}
+      },
+      "id": "01e70f47-f5ea-4451-acff-bde14f2bfa47",
+      "name": "Mark Request Processing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [96, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/generate-recipes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Forwarded-For",
+              "value": "={{ $('Select Pending Request').first().json.quotaIp }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Select Pending Request').first().json.payload }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "da115ae0-a229-477f-a97c-e4d2458ed99a",
+      "name": "Generate Recipes Internally",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [320, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json || {};\nconst succeeded = Array.isArray(response.recipes) && response.recipes.length === 3;\nconst patch = succeeded\n  ? {\n      status: 'completed',\n      recipes: response.recipes,\n      quota: response.quota || null,\n      updatedAt: Date.now(),\n    }\n  : {\n      status: 'failed',\n      errorMessage: response.message || response.error || 'The recipe workflow could not process this request.',\n      quota: response.quota || null,\n      updatedAt: Date.now(),\n    };\n\nreturn [{\n  json: {\n    requestId: $('Select Pending Request').first().json.requestId,\n    patch,\n  },\n}];"
+      },
+      "id": "98b55836-f928-4715-8620-6027669bbb3f",
+      "name": "Build Queue Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [544, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/generationRequests/{{ $json.requestId }}.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.patch }}",
+        "options": {}
+      },
+      "id": "4bdb3518-e24a-410f-917d-dbb3061fa755",
+      "name": "Save Queue Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [768, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 10 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Request": {
+      "main": [
+        [
+          {
+            "node": "Select Pending Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Pending Request": {
+      "main": [
+        [
+          {
+            "node": "Mark Request Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Request Processing": {
+      "main": [
+        [
+          {
+            "node": "Generate Recipes Internally",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Recipes Internally": {
+      "main": [
+        [
+          {
+            "node": "Build Queue Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Queue Result": {
+      "main": [
+        [
+          {
+            "node": "Save Queue Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all"
+  },
+  "versionId": "57a05d7c-8997-42bd-844d-45ee5b5ea5d9",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "Q7rP2mL9vK4sT8xN",
+  "tags": []
+}

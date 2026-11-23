@@ -115,21 +115,6 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCQlEyktPbs1Gt6s93AE16haf6AQvBvIa4",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"returnSecureToken\": true}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [1072, -64],
-      "id": "cbb691f1-d6fc-4843-a83d-2146fb94548a",
-      "name": "Sign In Anonymously"
-    },
-    {
-      "parameters": {
-        "method": "POST",
         "url": "=https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/recipes.json?auth={{ $json.idToken }}",
         "sendBody": true,
         "specifyBody": "json",
@@ -144,7 +129,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const tokenItems = $input.all();\nconst recipeItems = $('Parse Generated Recipes').all();\n\nreturn tokenItems.map((item, index) => ({\n  json: {\n    idToken: item.json.idToken,\n    recipe: recipeItems[index].json,\n  },\n}));"
+        "jsCode": "const recipeItems = $input.all();\nconst idToken = $('Sign In For Quota Check').first().json.idToken;\n\nreturn recipeItems.map((item) => ({\n  json: {\n    idToken,\n    recipe: item.json,\n  },\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -174,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const quota = $('Check Quota').first().json;\nconst newIpCount = quota.ipCount + quota.recipesPerRequest;\nconst newTotalCount = quota.totalCount + quota.recipesPerRequest;\nconst remainingRecipes = Math.max(0, Math.min(quota.maxPerIp - newIpCount, quota.maxTotal - newTotalCount));\nconst canGenerate = remainingRecipes >= quota.recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : (newIpCount >= quota.maxPerIp\n      ? 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{\n  json: {\n    ipKey: quota.ipKey,\n    date: quota.date,\n    idToken: $('Sign In For Quota Check').first().json.idToken,\n    quotaBody: JSON.stringify({ count: newIpCount }),\n    quota: {\n      date: quota.date,\n      perIpLimit: quota.maxPerIp,\n      systemLimit: quota.maxTotal,\n      ipUsed: newIpCount,\n      totalUsed: newTotalCount,\n      remainingRecipes,\n      canGenerate,\n      message,\n    },\n  },\n}];"
+        "jsCode": "const quota = $('Check Quota').first().json;\nconst newIpCount = quota.ipCount + quota.recipesPerRequest;\nconst newTotalCount = quota.totalCount + quota.recipesPerRequest;\nconst remainingRecipes = Math.max(0, Math.min(quota.maxPerIp - newIpCount, quota.maxTotal - newTotalCount));\nconst canGenerate = remainingRecipes >= quota.recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available for this browser today.`\n  : (newIpCount >= quota.maxPerIp\n      ? 'You have reached the daily limit of 9 recipes for this browser. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{\n  json: {\n    ipKey: quota.ipKey,\n    date: quota.date,\n    idToken: $('Sign In For Quota Check').first().json.idToken,\n    quotaBody: JSON.stringify({ count: newIpCount }),\n    quota: {\n      date: quota.date,\n      perIpLimit: quota.maxPerIp,\n      systemLimit: quota.maxTotal,\n      ipUsed: newIpCount,\n      totalUsed: newTotalCount,\n      remainingRecipes,\n      canGenerate,\n      message,\n    },\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -249,7 +234,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const context = $('Extract Request Context').first().json;\nconst dailyQuota = $input.first().json || {};\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 9;\nconst MAX_TOTAL = 12;\nconst ipCount = Number(dailyQuota[context.ipKey]?.count) || 0;\nconst totalCount = Object.values(dailyQuota).reduce(\n  (sum, entry) => sum + (Number(entry?.count) || 0),\n  0,\n);\nconst ipExceeded = ipCount + RECIPES_PER_REQUEST > MAX_PER_IP;\nconst totalExceeded = totalCount + RECIPES_PER_REQUEST > MAX_TOTAL;\nconst quotaExceeded = ipExceeded || totalExceeded;\nconst remainingRecipes = Math.max(0, Math.min(MAX_PER_IP - ipCount, MAX_TOTAL - totalCount));\nconst quotaMessage = quotaExceeded\n  ? (ipExceeded\n      ? 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.')\n  : `${remainingRecipes} recipes are available today for this network.`;\n\nreturn [{ json: {\n  ip: context.ip,\n  ipKey: context.ipKey,\n  date: context.date,\n  ipCount,\n  totalCount,\n  recipesPerRequest: RECIPES_PER_REQUEST,\n  maxPerIp: MAX_PER_IP,\n  maxTotal: MAX_TOTAL,\n  remainingRecipes,\n  quotaExceeded,\n  quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n  quotaMessage,\n} }];"
+        "jsCode": "const context = $('Extract Request Context').first().json;\nconst dailyQuota = $input.first().json || {};\nconst RECIPES_PER_REQUEST = 3;\nconst MAX_PER_IP = 9;\nconst MAX_TOTAL = 12;\nconst ipCount = Number(dailyQuota[context.ipKey]?.count) || 0;\nconst totalCount = Object.values(dailyQuota).reduce(\n  (sum, entry) => sum + (Number(entry?.count) || 0),\n  0,\n);\nconst ipExceeded = ipCount + RECIPES_PER_REQUEST > MAX_PER_IP;\nconst totalExceeded = totalCount + RECIPES_PER_REQUEST > MAX_TOTAL;\nconst quotaExceeded = ipExceeded || totalExceeded;\nconst remainingRecipes = Math.max(0, Math.min(MAX_PER_IP - ipCount, MAX_TOTAL - totalCount));\nconst quotaMessage = quotaExceeded\n  ? (ipExceeded\n      ? 'You have reached the daily limit of 9 recipes for this browser. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.')\n  : `${remainingRecipes} recipes are available for this browser today.`;\n\nreturn [{ json: {\n  ip: context.ip,\n  ipKey: context.ipKey,\n  date: context.date,\n  ipCount,\n  totalCount,\n  recipesPerRequest: RECIPES_PER_REQUEST,\n  maxPerIp: MAX_PER_IP,\n  maxTotal: MAX_TOTAL,\n  remainingRecipes,\n  quotaExceeded,\n  quotaStatus: quotaExceeded ? 'exceeded' : 'ok',\n  quotaMessage,\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -410,7 +395,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const context = $('Extract Quota Status Context').first().json;\nconst dailyQuota = $input.first().json || {};\nconst perIpLimit = 9;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nconst ipUsed = Number(dailyQuota[context.ipKey]?.count) || 0;\nconst totalUsed = Object.values(dailyQuota).reduce(\n  (sum, entry) => sum + (Number(entry?.count) || 0),\n  0,\n);\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available today for this network.`\n  : (ipUsed >= perIpLimit\n      ? 'You have reached your daily limit of 9 recipes for this network. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{ json: {\n  date: context.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n} }];"
+        "jsCode": "const context = $('Extract Quota Status Context').first().json;\nconst dailyQuota = $input.first().json || {};\nconst perIpLimit = 9;\nconst systemLimit = 12;\nconst recipesPerRequest = 3;\nconst ipUsed = Number(dailyQuota[context.ipKey]?.count) || 0;\nconst totalUsed = Object.values(dailyQuota).reduce(\n  (sum, entry) => sum + (Number(entry?.count) || 0),\n  0,\n);\nconst remainingRecipes = Math.max(0, Math.min(perIpLimit - ipUsed, systemLimit - totalUsed));\nconst canGenerate = remainingRecipes >= recipesPerRequest;\nconst message = canGenerate\n  ? `${remainingRecipes} recipes are available for this browser today.`\n  : (ipUsed >= perIpLimit\n      ? 'You have reached the daily limit of 9 recipes for this browser. Please try again tomorrow.'\n      : 'The daily system-wide limit of 12 recipes has been reached. Please try again tomorrow.');\n\nreturn [{ json: {\n  date: context.date,\n  perIpLimit,\n  systemLimit,\n  ipUsed,\n  totalUsed,\n  remainingRecipes,\n  canGenerate,\n  message,\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -515,17 +500,6 @@
         ]
       ]
     },
-    "Sign In Anonymously": {
-      "main": [
-        [
-          {
-            "node": "Combine Token and Recipe",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Save Recipe to Firebase": {
       "main": [
         [
@@ -552,7 +526,7 @@
       "main": [
         [
           {
-            "node": "Sign In Anonymously",
+            "node": "Combine Token and Recipe",
             "type": "main",
             "index": 0
           }

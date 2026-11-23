@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const workflow = JSON.parse(readFileSync(new URL('../n8n/code-a-cuisine.json', import.meta.url)));
+const queueWorkflow = JSON.parse(
+  readFileSync(new URL('../n8n/firebase-recipe-queue.json', import.meta.url)),
+);
 const nodes = new Map(workflow.nodes.map((node) => [node.name, node]));
+const queueNodes = new Map(queueWorkflow.nodes.map((node) => [node.name, node]));
 assert.equal(nodes.size, workflow.nodes.length, 'Workflow node names must be unique');
 assert.equal(
   nodes.get('Google Gemini Chat Model')?.parameters?.modelName,
@@ -175,5 +179,53 @@ for (const removedNode of [
   assert.equal(nodes.has(removedNode), false, `${removedNode} should not exist`);
 }
 assert.equal(nodes.has('Email Error Notification'), false);
+
+assert.equal(
+  queueNodes.get('Every 10 Seconds')?.type,
+  'n8n-nodes-base.scheduleTrigger',
+  'The Firebase queue must run from a schedule trigger',
+);
+assert.equal(
+  queueNodes.get('Every 10 Seconds')?.parameters?.rule?.interval?.[0]?.secondsInterval,
+  10,
+  'The Firebase queue should check pending requests every ten seconds',
+);
+assert.equal(
+  queueNodes.get('Generate Recipes Internally')?.parameters?.url,
+  'http://n8n:5678/webhook/generate-recipes',
+  'The queue must call n8n only through the private Docker network',
+);
+assert.equal(
+  queueNodes.get('Generate Recipes Internally')?.parameters?.headerParameters?.parameters?.[0]
+    ?.name,
+  'X-Forwarded-For',
+  'The queue must provide the private anonymous-user quota identity',
+);
+assert.equal(queueWorkflow.connections['Build Queue Result'].main[0][0].node, 'Save Queue Result');
+
+for (const connection of Object.values(queueWorkflow.connections)) {
+  for (const outputs of Object.values(connection)) {
+    for (const branch of outputs) {
+      for (const target of branch) {
+        assert.ok(queueNodes.has(target.node), `Connected queue node ${target.node} must exist`);
+      }
+    }
+  }
+}
+
+const generatorService = readFileSync(
+  new URL('../src/app/services/recipe-generator.ts', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  generatorService,
+  /n8nWebhookUrl|localhost:5679/,
+  'The deployed frontend must not connect directly to local n8n',
+);
+assert.match(
+  generatorService,
+  /generationRequests/,
+  'The frontend must submit generation requests through Firebase',
+);
 
 console.log('Quota workflow checks passed.');

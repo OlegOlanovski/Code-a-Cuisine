@@ -141,7 +141,7 @@ export class Preferences implements OnInit {
           const message =
             error?.error?.message ??
             (Array.isArray(details) ? details.join(' ') : null) ??
-            'We could not generate recipes. Please check that n8n is running and try again.';
+            'We could not generate recipes. Please check that the processing workflow is running and try again.';
 
           this.generationErrorMessage.set(message);
           this.isGenerating.set(false);

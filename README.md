@@ -15,7 +15,7 @@ Repository: [github.com/OlegOlanovski/Code-a-Cuisine](https://github.com/OlegOla
 - Chef assignments, parallel-step metadata, and waiting times
 - Nutrition information per serving and for the complete recipe in the stored data
 - Public Firebase recipe library with cuisine categories, likes, and pagination
-- IP-based and system-wide recipe quotas enforced by n8n
+- Anonymous-user and system-wide recipe quotas enforced by n8n
 - Responsive layouts for smartphone, tablet, desktop, and widescreen displays
 - Accessible loading, validation, empty, and error states
 
@@ -32,19 +32,57 @@ Repository: [github.com/OlegOlanovski/Code-a-Cuisine](https://github.com/OlegOla
 ## Architecture
 
 ```text
-Angular frontend
-      |
-      v
-nginx quota gateway
-      |
-      v
-n8n workflow ----> Google Gemini
-      |
-      v
-Firebase Realtime Database
+Angular frontend ----> Firebase generation queue
+                              ^
+                              | polls every 10 seconds
+                              |
+                     local n8n queue workflow
+                              |
+                              v
+                     recipe workflow ----> Google Gemini
+                              |
+                              v
+                     Firebase recipes and queue result
 ```
 
-The Angular application sends ingredients and preferences to the n8n webhook. The workflow validates the request, checks the daily quota, generates exactly three recipes with Gemini, stores them in Firebase, updates the quota, and returns the saved recipes to the frontend.
+The Angular application never connects directly to the computer running n8n. It writes a pending request to Firebase and listens for its status. The local queue workflow finds pending requests, calls the recipe workflow inside the private Docker network, and saves either the generated recipes or an error back to Firebase. This makes the deployed frontend usable without exposing n8n or creating a public tunnel.
+
+## Demo and project evaluation
+
+The submitted Developer Akademie URL contains the compiled Angular frontend. No installation, account, or local development server is required to review the hosted demo.
+
+The application uses two different backend components:
+
+- Firebase is hosted in the cloud. The cookbook, saved recipes, recipe details, and likes remain available independently of the project author's computer.
+- n8n is self-hosted for this educational demonstration. AI recipe generation is available during the agreed review period while the project author's computer and Docker services are running.
+
+> [!IMPORTANT]
+> Firebase is the bridge between the public frontend and local n8n. No inbound connection, public n8n URL, or HTTPS tunnel is required. If n8n is temporarily offline, new generation requests remain pending in Firebase until the queue workflow is available again.
+
+### Suggested review flow
+
+1. Open the submitted Developer Akademie project URL and select **Get started**.
+2. Add at least one ingredient with a quantity and unit. For example, add `Pasta` with `200 gram` and `Tomato` with `150 gram`.
+3. Select **Next step**.
+4. Choose the portions, number of cooks, cooking time, cuisine, and diet preference.
+5. Select **Generate recipe** and wait for the AI workflow to return three suggestions.
+6. Open a generated recipe and review its ingredients, nutrition information, cooking steps, and chef assignments.
+7. Open **Cookbook**, browse a cuisine, open an existing recipe, and test the like button.
+8. Resize the browser or use browser device emulation to review the smartphone, tablet, desktop, and widescreen layouts.
+
+No login is required. Recipe generation is intentionally limited by a daily quota. If that quota has already been reached, the application displays the corresponding message; existing cookbook content remains available.
+
+### Maintainer checklist before the review
+
+The following steps are performed by the project author, not by the reviewer:
+
+1. Start Docker Desktop and run `docker compose up -d` in the project directory.
+2. Confirm that both `code-a-cuisine-n8n` and `code-a-cuisine-quota-gateway` are running.
+3. Confirm that both **Code-a-Cuisine** and **Firebase Recipe Queue** are published in n8n.
+4. Confirm that the Google Gemini credential is connected to the recipe workflow.
+5. Run `npm run build` and upload the contents of `dist/code-a-cuisine/browser` to the frontend server.
+6. Keep the computer, Docker services, and internet connection running for the agreed review period. Disable sleep mode for that period.
+7. Test one complete generation through the deployed URL in a private browser window. A request can remain pending for up to ten seconds before processing starts.
 
 ## Requirements
 
@@ -76,7 +114,6 @@ Use this structure and insert the public configuration from your Firebase projec
 ```ts
 export const environment = {
   production: false,
-  n8nWebhookUrl: 'http://localhost:5679/webhook/generate-recipes',
   firebase: {
     apiKey: 'YOUR_FIREBASE_API_KEY',
     authDomain: 'YOUR_PROJECT.firebaseapp.com',
@@ -89,7 +126,7 @@ export const environment = {
 };
 ```
 
-Set `production: true` in `environment.ts`. For a deployed application, also replace `n8nWebhookUrl` with the public HTTPS address of the quota gateway.
+Set `production: true` in `environment.ts`. The same Firebase project must be used by the frontend and both n8n workflows. No n8n URL is included in the frontend configuration.
 
 ## Firebase setup
 
@@ -98,9 +135,10 @@ Set `production: true` in `environment.ts`. For a deployed application, also rep
 3. Create a Realtime Database in the appropriate region.
 4. Add the Firebase web-app configuration to both Angular environment files.
 5. Configure database access for `recipes`.
-6. Merge the `quota` child from `n8n/firebase-quota-rules-snippet.json` into the existing Realtime Database rules and publish them.
+6. Merge the `quota` child from `n8n/firebase-quota-rules-snippet.json` into the existing Realtime Database rules.
+7. Merge `generationRequests` from `n8n/firebase-generation-queue-rules-snippet.json` into the same rules and publish them.
 
-Do not replace the existing `recipes` rules when adding the quota rules.
+Do not replace the existing `recipes` rules when adding these rule sections. The queue rules are intended only for an educational demonstration: n8n polls and updates the queue without a backend credential, so queue records are publicly accessible. A production application should use a dedicated backend identity and private server-side queue.
 
 ## n8n setup
 
@@ -110,26 +148,26 @@ Start n8n and the quota gateway:
 docker compose up -d
 ```
 
-Open n8n through the local instance, configure the Google Gemini credential, and import the workflow:
+Open n8n at [http://localhost:5679](http://localhost:5679), configure the Google Gemini credential, and import both workflows:
 
 ```bash
 docker compose exec -u node n8n \
   n8n import:workflow --input=/workflows/code-a-cuisine.json
+docker compose exec -u node n8n \
+  n8n import:workflow --input=/workflows/firebase-recipe-queue.json
 ```
 
-Publish the imported workflow and restart n8n:
+Publish both imported workflows and restart n8n:
 
 ```bash
 docker compose exec -u node n8n \
   n8n publish:workflow --id=jbQPlrHD9efaS8X0
+docker compose exec -u node n8n \
+  n8n publish:workflow --id=Q7rP2mL9vK4sT8xN
 docker compose restart n8n
 ```
 
-The frontend communicates with the gateway at `http://localhost:5679`. The gateway replaces forwarded IP headers with the real connection address before forwarding requests to n8n.
-
-### CORS for deployment
-
-The exported workflow currently permits `http://localhost:4200`. Before deployment, update `allowedOrigins` for both webhook nodes in `n8n/code-a-cuisine.json` to the final frontend domain, then import and publish the workflow again.
+The queue workflow fetches one pending request from Firebase and invokes the existing recipe webhook only through the private Docker hostname `http://n8n:5678`. The browser never calls this webhook, so frontend CORS configuration and a public webhook URL are not required. Firebase authentication is performed only by the frontend and by the recipe workflow when it stores recipes and quota data, not by the ten-second queue poll.
 
 ## Development
 
@@ -141,7 +179,7 @@ npm start
 
 Open [http://localhost:4200](http://localhost:4200).
 
-The complete local application requires the Angular server, n8n container, quota gateway, Firebase configuration, and published n8n workflow to be available.
+The complete local application requires the Angular server, n8n container, Firebase configuration, and both published n8n workflows to be available.
 
 ## Tests
 
@@ -163,25 +201,25 @@ npm run test:quota
 npm run build
 ```
 
-The optimized frontend is written to `dist/code-a-cuisine`.
+The optimized frontend is written to `dist/code-a-cuisine/browser`. Upload the contents of the `browser` directory, not the directory itself, to the web server.
 
 ## Daily quota
 
-The quota is tracked by public IP address and Berlin calendar date. IPv4 and IPv6 addresses are normalized and validated. The gateway prevents clients from spoofing forwarded IP headers, and n8n serializes production executions to prevent concurrent quota updates from racing.
+The quota is tracked by anonymous Firebase user and Berlin calendar date. The private queue workflow converts the Firebase user ID into a stable synthetic IPv6 identifier before it calls the recipe workflow. Because the browser cannot reach the internal n8n service, it cannot supply or spoof this identifier.
 
 Current workflow limits:
 
 - Three recipes are generated per successful request
-- Nine recipes per public IP per day
+- Nine recipes per anonymous browser user per day
 - Twelve recipes across the whole system per day
 
 Quota data is stored under:
 
 ```text
-quota/<YYYY-MM-DD>/byIp/<normalized-IP>/count
+quota/<YYYY-MM-DD>/byIp/<synthetic-user-IP>/count
 ```
 
-Deleting one IP entry resets that network's allowance. Deleting the date entry resets the complete daily quota.
+Deleting one synthetic user entry resets that browser user's allowance. Deleting the date entry resets the complete daily quota. Clearing browser storage creates a new anonymous Firebase user, so this client-side identity is suitable for a course demonstration rather than a production anti-abuse system.
 
 ## Error logging
 
@@ -203,6 +241,8 @@ src/app/services/           Firebase and recipe-generation services
 src/app/models/             Shared recipe data model
 public/                     Images, icons, and loading animation
 n8n/code-a-cuisine.json     Exported n8n workflow
+n8n/firebase-recipe-queue.json  Firebase queue polling workflow
+n8n/*-rules-snippet.json    Firebase queue and quota rule fragments
 n8n/nginx.conf              IP-preserving quota gateway
 scripts/                    Workflow checks and seed data
 compose.yaml                Local n8n and nginx services
