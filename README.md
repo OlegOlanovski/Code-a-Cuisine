@@ -26,7 +26,7 @@ Repository: [github.com/OlegOlanovski/Code-a-Cuisine](https://github.com/OlegOla
 - Firebase Authentication and Realtime Database
 - n8n workflow automation
 - Google Gemini
-- Docker Compose and nginx
+- Docker Compose
 - Vitest
 
 ## Architecture
@@ -36,16 +36,13 @@ Angular frontend ----> Firebase generation queue
                               ^
                               | polls every 10 seconds
                               |
-                     local n8n queue workflow
-                              |
-                              v
-                     recipe workflow ----> Google Gemini
+                     local n8n workflow ----> Google Gemini
                               |
                               v
                      Firebase recipes and queue result
 ```
 
-The Angular application never connects directly to the computer running n8n. It writes a pending request to Firebase and listens for its status. The local queue workflow finds pending requests, calls the recipe workflow inside the private Docker network, and saves either the generated recipes or an error back to Firebase. This makes the deployed frontend usable without exposing n8n or creating a public tunnel.
+The Angular application never connects directly to the computer running n8n. It writes a pending request to Firebase and listens for its status. One scheduled n8n workflow finds pending requests, validates the request and quota, generates recipes with Gemini, stores them, and writes either the recipes or an error back to the Firebase queue. This makes the deployed frontend usable without exposing n8n or creating a public tunnel.
 
 ## Demo and project evaluation
 
@@ -77,9 +74,9 @@ No login is required. Recipe generation is intentionally limited by a daily quot
 The following steps are performed by the project author, not by the reviewer:
 
 1. Start Docker Desktop and run `docker compose up -d` in the project directory.
-2. Confirm that both `code-a-cuisine-n8n` and `code-a-cuisine-quota-gateway` are running.
-3. Confirm that both **Code-a-Cuisine** and **Firebase Recipe Queue** are published in n8n.
-4. Confirm that the Google Gemini credential is connected to the recipe workflow.
+2. Confirm that `code-a-cuisine-n8n` is running.
+3. Confirm that **Code-a-Cuisine Firebase Queue** is published in n8n.
+4. Confirm that the Google Gemini credential is connected to the workflow.
 5. Run `npm run build` and upload the contents of `dist/code-a-cuisine/browser` to the frontend server.
 6. Keep the computer, Docker services, and internet connection running for the agreed review period. Disable sleep mode for that period.
 7. Test one complete generation through the deployed URL in a private browser window. A request can remain pending for up to ten seconds before processing starts.
@@ -126,7 +123,7 @@ export const environment = {
 };
 ```
 
-Set `production: true` in `environment.ts`. The same Firebase project must be used by the frontend and both n8n workflows. No n8n URL is included in the frontend configuration.
+Set `production: true` in `environment.ts`. The same Firebase project must be used by the frontend and the n8n workflow. No n8n URL is included in the frontend configuration.
 
 ## Firebase setup
 
@@ -142,32 +139,28 @@ Do not replace the existing `recipes` rules when adding these rule sections. The
 
 ## n8n setup
 
-Start n8n and the quota gateway:
+Start n8n:
 
 ```bash
 docker compose up -d
 ```
 
-Open n8n at [http://localhost:5679](http://localhost:5679), configure the Google Gemini credential, and import both workflows:
+Open n8n at [http://localhost:5679](http://localhost:5679), configure the Google Gemini credential, and import the workflow:
 
 ```bash
 docker compose exec -u node n8n \
   n8n import:workflow --input=/workflows/code-a-cuisine.json
-docker compose exec -u node n8n \
-  n8n import:workflow --input=/workflows/firebase-recipe-queue.json
 ```
 
-Publish both imported workflows and restart n8n:
+Publish the imported workflow and restart n8n:
 
 ```bash
 docker compose exec -u node n8n \
   n8n publish:workflow --id=jbQPlrHD9efaS8X0
-docker compose exec -u node n8n \
-  n8n publish:workflow --id=Q7rP2mL9vK4sT8xN
 docker compose restart n8n
 ```
 
-The queue workflow fetches one pending request from Firebase and invokes the existing recipe webhook only through the private Docker hostname `http://n8n:5678`. The browser never calls this webhook, so frontend CORS configuration and a public webhook URL are not required. Firebase authentication is performed only by the frontend and by the recipe workflow when it stores recipes and quota data, not by the ten-second queue poll.
+The workflow fetches one pending Firebase request every ten seconds and processes it directly. There is no webhook or internal HTTP call between workflows, so frontend CORS configuration and a public n8n URL are not required. Firebase authentication is performed only by the frontend and by n8n when it stores recipes and quota data, not by the queue poll.
 
 ## Development
 
@@ -179,7 +172,7 @@ npm start
 
 Open [http://localhost:4200](http://localhost:4200).
 
-The complete local application requires the Angular server, n8n container, Firebase configuration, and both published n8n workflows to be available.
+The complete local application requires the Angular server, n8n container, Firebase configuration, and the published n8n workflow to be available.
 
 ## Tests
 
@@ -205,7 +198,7 @@ The optimized frontend is written to `dist/code-a-cuisine/browser`. Upload the c
 
 ## Daily quota
 
-The quota is tracked by anonymous Firebase user and Berlin calendar date. The private queue workflow converts the Firebase user ID into a stable synthetic IPv6 identifier before it calls the recipe workflow. Because the browser cannot reach the internal n8n service, it cannot supply or spoof this identifier.
+The quota is tracked by anonymous Firebase user and Berlin calendar date. The workflow converts the Firebase user ID into a stable synthetic IPv6 identifier before checking the quota. The browser cannot directly provide or modify this internal identifier.
 
 Current workflow limits:
 
@@ -241,11 +234,9 @@ src/app/services/           Firebase and recipe-generation services
 src/app/models/             Shared recipe data model
 public/                     Images, icons, and loading animation
 n8n/code-a-cuisine.json     Exported n8n workflow
-n8n/firebase-recipe-queue.json  Firebase queue polling workflow
 n8n/*-rules-snippet.json    Firebase queue and quota rule fragments
-n8n/nginx.conf              IP-preserving quota gateway
 scripts/                    Workflow checks and seed data
-compose.yaml                Local n8n and nginx services
+compose.yaml                Local n8n service
 ```
 
 ## Available scripts

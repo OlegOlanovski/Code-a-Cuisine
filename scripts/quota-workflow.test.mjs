@@ -1,17 +1,15 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const workflow = JSON.parse(readFileSync(new URL('../n8n/code-a-cuisine.json', import.meta.url)));
-const queueWorkflow = JSON.parse(
-  readFileSync(new URL('../n8n/firebase-recipe-queue.json', import.meta.url)),
-);
 const nodes = new Map(workflow.nodes.map((node) => [node.name, node]));
-const queueNodes = new Map(queueWorkflow.nodes.map((node) => [node.name, node]));
+
+assert.equal(workflow.name, 'Code-a-Cuisine Firebase Queue');
 assert.equal(nodes.size, workflow.nodes.length, 'Workflow node names must be unique');
 assert.equal(
   nodes.get('Google Gemini Chat Model')?.parameters?.modelName,
   'models/gemini-3.5-flash',
-  'Recipe generation should use the stable Gemini model',
+  'Recipe generation should use the configured Gemini model',
 );
 
 for (const connection of Object.values(workflow.connections)) {
@@ -24,6 +22,7 @@ for (const connection of Object.values(workflow.connections)) {
   }
 }
 
+/** Executes JavaScript from one n8n Code node with a minimal test context. */
 function executeCodeNode(name, input, nodeData = {}) {
   const code = nodes.get(name)?.parameters?.jsCode;
   assert.ok(code, `Code node ${name} must exist`);
@@ -31,64 +30,81 @@ function executeCodeNode(name, input, nodeData = {}) {
   const inputValues = Array.isArray(input) ? input : [input];
   const inputItems = inputValues.map((json) => ({ json }));
   const $input = { first: () => inputItems[0], all: () => inputItems };
-  const $ = (nodeName) => ({ first: () => ({ json: nodeData[nodeName] ?? {} }) });
-  return new Function('$input', '$', code)($input, $)[0].json;
+  const $ = (nodeName) => {
+    const value = nodeData[nodeName] ?? {};
+    const values = Array.isArray(value) ? value : [value];
+    const items = values.map((json) => ({ json }));
+
+    return { first: () => items[0], all: () => items };
+  };
+
+  return new Function('$input', '$', '$json', code)($input, $, inputItems[0].json)[0].json;
 }
 
-const ipv4 = executeCodeNode('Extract Request Context', {
-  headers: { 'x-forwarded-for': '203.0.113.42' },
-  body: {},
-});
-assert.equal(ipv4.ip, '203.0.113.42');
-assert.equal(ipv4.ipKey, '203_0_113_42');
-assert.equal(ipv4.ipValid, true);
-
-const compressedIpv6 = executeCodeNode('Extract Request Context', {
-  headers: { 'x-forwarded-for': '2001:db8::1' },
-  body: {},
-});
-const expandedIpv6 = executeCodeNode('Extract Request Context', {
-  headers: { 'x-forwarded-for': '2001:0db8:0:0:0:0:0:1' },
-  body: {},
-});
-assert.equal(compressedIpv6.ip, expandedIpv6.ip);
-assert.equal(compressedIpv6.ipValid, true);
-
-const invalidIp = executeCodeNode('Extract Request Context', {
-  headers: { 'x-forwarded-for': 'not-an-ip' },
-  body: {},
-});
-assert.equal(invalidIp.ipValid, false);
-
-const validRecipeRequest = {
-  ...ipv4,
-  body: {
-    ingredients: [{ name: 'Potato', quantity: 800, unit: 'gram' }],
-    servings: 5,
-    timeCategory: 'medium',
-    cuisine: 'german',
-    diet: 'none',
-    helperCount: 3,
-  },
+const validPayload = {
+  ingredients: [{ name: 'Potato', quantity: 800, unit: 'gram' }],
+  servings: 5,
+  timeCategory: 'medium',
+  cuisine: 'german',
+  diet: 'none',
+  helperCount: 3,
 };
-const validRequest = executeCodeNode('Validate Recipe Request', validRecipeRequest);
-assert.equal(validRequest.isValid, true);
-
-const tooManyHelpersRequest = executeCodeNode('Validate Recipe Request', {
-  ...validRecipeRequest,
-  body: { ...validRecipeRequest.body, helperCount: 4 },
+const queueItem = executeCodeNode('Select Pending Request', {
+  request_1: {
+    ownerId: 'anonymous-firebase-user',
+    status: 'pending',
+    createdAt: 1,
+    payload: validPayload,
+  },
 });
-assert.equal(tooManyHelpersRequest.isValid, false);
-assert.ok(
-  tooManyHelpersRequest.validationErrors.includes(
-    'Helper count must be an integer between 1 and 3.',
-  ),
+
+assert.equal(queueItem.requestId, 'request_1');
+assert.equal(queueItem.ownerId, 'anonymous-firebase-user');
+assert.equal(queueItem.quotaIp.split(':').length, 8);
+assert.match(queueItem.quotaIp, /^fd00:/);
+
+const validRequest = executeCodeNode(
+  'Validate Recipe Request',
+  {},
+  {
+    'Select Pending Request': queueItem,
+  },
 );
+assert.equal(validRequest.isValid, true);
+assert.equal(validRequest.ipKey, queueItem.quotaIp);
+assert.equal(validRequest.requestId, 'request_1');
+
+const invalidQueueItem = {
+  ...queueItem,
+  payload: { ...validPayload, helperCount: 4 },
+};
+const invalidRequest = executeCodeNode(
+  'Validate Recipe Request',
+  {},
+  {
+    'Select Pending Request': invalidQueueItem,
+  },
+);
+assert.equal(invalidRequest.isValid, false);
+assert.ok(
+  invalidRequest.validationErrors.includes('Helper count must be an integer between 1 and 3.'),
+);
+
+const validationError = executeCodeNode(
+  'Build Queue Validation Error',
+  {},
+  {
+    'Validate Recipe Request': invalidRequest,
+  },
+);
+assert.equal(validationError.requestId, 'request_1');
+assert.equal(validationError.patch.status, 'failed');
+assert.equal(validationError.patch.errorMessage, 'Invalid request');
 
 const dailyQuota = {};
 for (let generation = 0; generation < 3; generation += 1) {
   const availableQuota = executeCodeNode('Check Quota', dailyQuota, {
-    'Extract Request Context': ipv4,
+    'Validate Recipe Request': validRequest,
   });
   assert.equal(availableQuota.recipesPerRequest, 3);
   assert.equal(availableQuota.maxPerIp, 9);
@@ -105,113 +121,84 @@ for (let generation = 0; generation < 3; generation += 1) {
       'Sign In For Quota Check': { idToken: 'test-token' },
     },
   );
-  dailyQuota[ipv4.ipKey] = JSON.parse(increment.quotaBody);
-  assert.equal(dailyQuota[ipv4.ipKey].count, (generation + 1) * 3);
+  dailyQuota[validRequest.ipKey] = JSON.parse(increment.quotaBody);
+  assert.equal(dailyQuota[validRequest.ipKey].count, (generation + 1) * 3);
 }
 
-const exhaustedIpQuota = executeCodeNode('Check Quota', dailyQuota, {
-  'Extract Request Context': ipv4,
+const exhaustedQuota = executeCodeNode('Check Quota', dailyQuota, {
+  'Validate Recipe Request': validRequest,
 });
-assert.equal(exhaustedIpQuota.quotaExceeded, true);
-assert.match(exhaustedIpQuota.quotaMessage, /daily limit of 9 recipes/);
+assert.equal(exhaustedQuota.quotaExceeded, true);
+assert.match(exhaustedQuota.quotaMessage, /daily limit of 9 recipes/);
 
-const quotaStatus = executeCodeNode('Build Quota Status', dailyQuota, {
-  'Extract Quota Status Context': ipv4,
+const quotaError = executeCodeNode('Build Queue Quota Error', exhaustedQuota, {
+  'Validate Recipe Request': validRequest,
 });
-assert.equal(quotaStatus.ipUsed, 9);
-assert.equal(quotaStatus.totalUsed, 9);
-assert.equal(quotaStatus.canGenerate, false);
+assert.equal(quotaError.requestId, 'request_1');
+assert.equal(quotaError.patch.status, 'failed');
+assert.equal(quotaError.patch.quota.canGenerate, false);
 
-const exhaustedSystemQuota = executeCodeNode(
+const systemQuota = executeCodeNode(
   'Check Quota',
   {
-    first_ip: { count: 3 },
-    second_ip: { count: 3 },
-    third_ip: { count: 3 },
-    fourth_ip: { count: 3 },
+    first_user: { count: 3 },
+    second_user: { count: 3 },
+    third_user: { count: 3 },
+    fourth_user: { count: 3 },
   },
-  { 'Extract Request Context': ipv4 },
+  { 'Validate Recipe Request': validRequest },
 );
-assert.equal(exhaustedSystemQuota.quotaExceeded, true);
-assert.match(exhaustedSystemQuota.quotaMessage, /system-wide limit of 12 recipes/);
+assert.equal(systemQuota.quotaExceeded, true);
+assert.match(systemQuota.quotaMessage, /system-wide limit of 12 recipes/);
 
-delete dailyQuota[ipv4.ipKey];
-const resetQuotaStatus = executeCodeNode('Build Quota Status', dailyQuota, {
-  'Extract Quota Status Context': ipv4,
-});
-assert.equal(resetQuotaStatus.ipUsed, 0);
-assert.equal(resetQuotaStatus.totalUsed, 0);
-
-const nginxConfig = readFileSync(new URL('../n8n/nginx.conf', import.meta.url), 'utf8');
-assert.match(nginxConfig, /proxy_set_header X-Forwarded-For \$remote_addr;/);
-
-assert.equal(workflow.connections['Is Quota Available?'].main[1][0].node, 'Generate Recipes');
+assert.equal(nodes.get('Every 10 Seconds')?.type, 'n8n-nodes-base.scheduleTrigger');
+assert.equal(nodes.get('Every 10 Seconds')?.parameters?.rule?.interval?.[0]?.secondsInterval, 10);
+assert.equal(workflow.connections['Every 10 Seconds'].main[0][0].node, 'Get Pending Request');
+assert.equal(
+  workflow.connections['Mark Request Processing'].main[0][0].node,
+  'Validate Recipe Request',
+);
 assert.equal(workflow.connections['Is Request Valid?'].main[0][0].node, 'Sign In For Quota Check');
-assert.equal(workflow.connections['Sign In For Quota Check'].main[0][0].node, 'Get Daily Quota');
-assert.equal(workflow.connections['Get Daily Quota'].main[0][0].node, 'Check Quota');
 assert.equal(
-  workflow.connections['Is Quota Status IP Valid?'].main[0][0].node,
-  'Sign In For Quota Status',
+  workflow.connections['Is Request Valid?'].main[1][0].node,
+  'Build Queue Validation Error',
 );
 assert.equal(
-  workflow.connections['Sign In For Quota Status'].main[0][0].node,
-  'Get Quota Status Daily',
+  workflow.connections['Is Quota Available?'].main[0][0].node,
+  'Build Queue Quota Error',
 );
-assert.equal(workflow.connections['Get Quota Status Daily'].main[0][0].node, 'Build Quota Status');
-assert.equal(workflow.connections['Attach Firebase ID'].main[0][0].node, 'Prepare Quota Increment');
-assert.equal(
-  workflow.connections['Prepare Quota Increment'].main[0][0].node,
-  'Save Quota to Firebase',
-);
-assert.equal(
-  workflow.connections['Save Quota to Firebase'].main[0][0].node,
-  'Combine Final Recipes',
-);
+assert.equal(workflow.connections['Is Quota Available?'].main[1][0].node, 'Generate Recipes');
+assert.equal(workflow.connections['Combine Final Recipes'].main[0][0].node, 'Save Queue Result');
+
 for (const removedNode of [
-  'Get IP Count',
-  'Get Total Count',
-  'Increment IP Count',
-  'Increment Total Count',
-  'Get Quota Status Total',
-  'Get Quota Status IP',
-  'Increment Quota After Success',
+  'Receive Recipe Request',
+  'Receive Quota Status Request',
+  'Respond With Recipes',
+  'Respond to Webhook',
+  'Generate Recipes Internally',
+  'Sign In For Quota Status',
+  'Build Quota Status',
 ]) {
   assert.equal(nodes.has(removedNode), false, `${removedNode} should not exist`);
 }
-assert.equal(nodes.has('Email Error Notification'), false);
 
 assert.equal(
-  queueNodes.get('Every 10 Seconds')?.type,
-  'n8n-nodes-base.scheduleTrigger',
-  'The Firebase queue must run from a schedule trigger',
+  workflow.nodes.some((node) => node.type === 'n8n-nodes-base.webhook'),
+  false,
+  'The Firebase queue workflow must not expose a webhook',
 );
 assert.equal(
-  queueNodes.get('Every 10 Seconds')?.parameters?.rule?.interval?.[0]?.secondsInterval,
-  10,
-  'The Firebase queue should check pending requests every ten seconds',
+  workflow.nodes.some((node) => node.type === 'n8n-nodes-base.respondToWebhook'),
+  false,
+  'The merged workflow must not contain webhook response nodes',
 );
-assert.equal(
-  queueNodes.get('Generate Recipes Internally')?.parameters?.url,
-  'http://n8n:5678/webhook/generate-recipes',
-  'The queue must call n8n only through the private Docker network',
-);
-assert.equal(
-  queueNodes.get('Generate Recipes Internally')?.parameters?.headerParameters?.parameters?.[0]
-    ?.name,
-  'X-Forwarded-For',
-  'The queue must provide the private anonymous-user quota identity',
-);
-assert.equal(queueWorkflow.connections['Build Queue Result'].main[0][0].node, 'Save Queue Result');
 
-for (const connection of Object.values(queueWorkflow.connections)) {
-  for (const outputs of Object.values(connection)) {
-    for (const branch of outputs) {
-      for (const target of branch) {
-        assert.ok(queueNodes.has(target.node), `Connected queue node ${target.node} must exist`);
-      }
-    }
-  }
-}
+const composeConfig = readFileSync(new URL('../compose.yaml', import.meta.url), 'utf8');
+assert.match(composeConfig, /N8N_CONCURRENCY_PRODUCTION_LIMIT: '1'/);
+assert.match(composeConfig, /'5679:5678'/);
+assert.doesNotMatch(composeConfig, /quota-gateway|firebase-recipe-queue/);
+assert.equal(existsSync(new URL('../n8n/firebase-recipe-queue.json', import.meta.url)), false);
+assert.equal(existsSync(new URL('../n8n/nginx.conf', import.meta.url)), false);
 
 const generatorService = readFileSync(
   new URL('../src/app/services/recipe-generator.ts', import.meta.url),
@@ -228,4 +215,4 @@ assert.match(
   'The frontend must submit generation requests through Firebase',
 );
 
-console.log('Quota workflow checks passed.');
+console.log('Merged Firebase queue workflow checks passed.');
