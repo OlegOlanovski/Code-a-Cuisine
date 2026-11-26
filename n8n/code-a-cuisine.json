@@ -51,7 +51,11 @@
       "typeVersion": 1.9,
       "position": [1376, 0],
       "id": "3f8318f6-4c57-4504-9d4b-3d948fc148c2",
-      "name": "Generate Recipes"
+      "name": "Generate Recipes",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -80,7 +84,8 @@
       "typeVersion": 2,
       "position": [1600, 0],
       "id": "dc11351e-b210-46b2-af2f-642151805db1",
-      "name": "Parse Generated Recipes"
+      "name": "Parse Generated Recipes",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -267,7 +272,18 @@
     },
     {
       "parameters": {
-        "jsCode": "const requests = $input.first().json || {};\nconst entries = Object.entries(requests);\n\nif (entries.length === 0) {\n  return [];\n}\n\nentries.sort(([, first], [, second]) =>\n  (Number(first?.createdAt) || 0) - (Number(second?.createdAt) || 0),\n);\n\nconst [requestId, record] = entries[0];\nconst ownerId = String(record.ownerId || '');\nlet hash = 2166136261;\nconst groups = ['fd00'];\n\nfor (let groupIndex = 0; groupIndex < 7; groupIndex += 1) {\n  let value = 0;\n\n  for (const character of ownerId) {\n    hash ^= character.charCodeAt(0) + groupIndex;\n    hash = Math.imul(hash, 16777619) >>> 0;\n    value = (value + hash) >>> 0;\n  }\n\n  groups.push((value & 0xffff).toString(16));\n}\n\nreturn [{\n  json: {\n    requestId,\n    ownerId,\n    quotaIp: groups.join(':'),\n    payload: record.payload || {},\n  },\n}];"
+        "url": "https://code-a--cousine-oleg-default-rtdb.europe-west1.firebasedatabase.app/generationRequests.json?orderBy=%22status%22&equalTo=%22processing%22&limitToFirst=10",
+        "options": {}
+      },
+      "id": "fa345d81-29cd-4bbd-a468-4afbe17cb96c",
+      "name": "Get Processing Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-624, -160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const pendingRequests = $('Get Pending Request').first().json || {};\nconst processingRequests = $input.first().json || {};\nconst staleBefore = Date.now() - (10 * 60 * 1000);\n\nlet entries = Object.entries(pendingRequests);\n\nif (entries.length === 0) {\n  entries = Object.entries(processingRequests).filter(([, record]) =>\n    (Number(record?.updatedAt) || 0) < staleBefore,\n  );\n}\n\nif (entries.length === 0) {\n  return [];\n}\n\nentries.sort(([, first], [, second]) =>\n  (Number(first?.createdAt) || 0) - (Number(second?.createdAt) || 0),\n);\n\nconst [requestId, record] = entries[0];\nconst ownerId = String(record.ownerId || '');\nlet hash = 2166136261;\nconst groups = ['fd00'];\n\nfor (let groupIndex = 0; groupIndex < 7; groupIndex += 1) {\n  let value = 0;\n\n  for (const character of ownerId) {\n    hash ^= character.charCodeAt(0) + groupIndex;\n    hash = Math.imul(hash, 16777619) >>> 0;\n    value = (value + hash) >>> 0;\n  }\n\n  groups.push((value & 0xffff).toString(16));\n}\n\nreturn [{\n  json: {\n    requestId,\n    ownerId,\n    quotaIp: groups.join(':'),\n    payload: record.payload || {},\n  },\n}];"
       },
       "id": "d60b7114-f9d8-49b3-85ad-35b4039036e1",
       "name": "Select Pending Request",
@@ -324,6 +340,16 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1376, -256]
+    },
+    {
+      "parameters": {
+        "jsCode": "const failure = $input.first().json || {};\nconst rawError = typeof failure.error === 'string'\n  ? failure.error\n  : failure.error?.message;\nconst fallbackDetails = Object.keys(failure).length > 0\n  ? JSON.stringify(failure)\n  : 'Unknown recipe generation error';\nconst rawMessage = String(\n  rawError ||\n  failure.message ||\n  failure.description ||\n  fallbackDetails,\n);\nconst isTemporaryAiFailure = /503|service unavailable|high demand|temporarily unavailable|resource exhausted/i.test(rawMessage);\nconst errorMessage = isTemporaryAiFailure\n  ? 'The AI service is temporarily busy. Please try again in a moment.'\n  : 'Recipe generation failed. Please try again.';\n\nreturn [{\n  json: {\n    requestId: $('Validate Recipe Request').first().json.requestId,\n    patch: {\n      status: 'failed',\n      errorMessage,\n      errorDetails: [rawMessage],\n      updatedAt: Date.now(),\n    },\n  },\n}];"
+      },
+      "id": "8a6d8c63-e421-4b8f-bc28-b2366ecf1281",
+      "name": "Build Queue Generation Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1824, -256]
     }
   ],
   "pinData": {},
@@ -340,6 +366,17 @@
       ]
     },
     "Get Pending Request": {
+      "main": [
+        [
+          {
+            "node": "Get Processing Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Processing Request": {
       "main": [
         [
           {
@@ -482,6 +519,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Build Queue Generation Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -501,6 +545,24 @@
         [
           {
             "node": "Combine Token and Recipe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Queue Generation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Queue Generation Error": {
+      "main": [
+        [
+          {
+            "node": "Save Queue Result",
             "type": "main",
             "index": 0
           }

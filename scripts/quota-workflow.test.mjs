@@ -52,19 +52,40 @@ const validPayload = {
   diet: 'none',
   helperCount: 3,
 };
-const queueItem = executeCodeNode('Select Pending Request', {
-  request_1: {
-    ownerId: 'anonymous-firebase-user',
-    status: 'pending',
-    createdAt: 1,
-    payload: validPayload,
+const queueItem = executeCodeNode(
+  'Select Pending Request',
+  {},
+  {
+    'Get Pending Request': {
+      request_1: {
+        ownerId: 'anonymous-firebase-user',
+        status: 'pending',
+        createdAt: 1,
+        payload: validPayload,
+      },
+    },
   },
-});
+);
 
 assert.equal(queueItem.requestId, 'request_1');
 assert.equal(queueItem.ownerId, 'anonymous-firebase-user');
 assert.equal(queueItem.quotaIp.split(':').length, 8);
 assert.match(queueItem.quotaIp, /^fd00:/);
+
+const staleQueueItem = executeCodeNode(
+  'Select Pending Request',
+  {
+    stale_request: {
+      ownerId: 'stale-firebase-user',
+      status: 'processing',
+      createdAt: 1,
+      updatedAt: 1,
+      payload: validPayload,
+    },
+  },
+  { 'Get Pending Request': {} },
+);
+assert.equal(staleQueueItem.requestId, 'stale_request');
 
 const validRequest = executeCodeNode(
   'Validate Recipe Request',
@@ -149,6 +170,15 @@ assert.equal(validationError.requestId, 'request_1');
 assert.equal(validationError.patch.status, 'failed');
 assert.equal(validationError.patch.errorMessage, 'Invalid request');
 
+const generationError = executeCodeNode(
+  'Build Queue Generation Error',
+  { error: { message: '[503] Service unavailable due to high demand' } },
+  { 'Validate Recipe Request': validRequest },
+);
+assert.equal(generationError.requestId, 'request_1');
+assert.equal(generationError.patch.status, 'failed');
+assert.match(generationError.patch.errorMessage, /temporarily busy/);
+
 const dailyQuota = {};
 for (let generation = 0; generation < 3; generation += 1) {
   const availableQuota = executeCodeNode('Check Quota', dailyQuota, {
@@ -202,6 +232,8 @@ assert.match(systemQuota.quotaMessage, /system-wide limit of 12 recipes/);
 assert.equal(nodes.get('Every 10 Seconds')?.type, 'n8n-nodes-base.scheduleTrigger');
 assert.equal(nodes.get('Every 10 Seconds')?.parameters?.rule?.interval?.[0]?.secondsInterval, 10);
 assert.equal(workflow.connections['Every 10 Seconds'].main[0][0].node, 'Get Pending Request');
+assert.equal(workflow.connections['Get Pending Request'].main[0][0].node, 'Get Processing Request');
+assert.equal(workflow.connections['Get Processing Request'].main[0][0].node, 'Select Pending Request');
 assert.equal(
   workflow.connections['Mark Request Processing'].main[0][0].node,
   'Validate Recipe Request',
@@ -216,6 +248,23 @@ assert.equal(
   'Build Queue Quota Error',
 );
 assert.equal(workflow.connections['Is Quota Available?'].main[1][0].node, 'Generate Recipes');
+assert.equal(nodes.get('Generate Recipes')?.retryOnFail, true);
+assert.equal(nodes.get('Generate Recipes')?.maxTries, 3);
+assert.equal(nodes.get('Generate Recipes')?.waitBetweenTries, 5000);
+assert.equal(nodes.get('Generate Recipes')?.onError, 'continueErrorOutput');
+assert.equal(
+  workflow.connections['Generate Recipes'].main[1][0].node,
+  'Build Queue Generation Error',
+);
+assert.equal(nodes.get('Parse Generated Recipes')?.onError, 'continueErrorOutput');
+assert.equal(
+  workflow.connections['Parse Generated Recipes'].main[1][0].node,
+  'Build Queue Generation Error',
+);
+assert.equal(
+  workflow.connections['Build Queue Generation Error'].main[0][0].node,
+  'Save Queue Result',
+);
 assert.equal(workflow.connections['Combine Final Recipes'].main[0][0].node, 'Save Queue Result');
 
 for (const removedNode of [

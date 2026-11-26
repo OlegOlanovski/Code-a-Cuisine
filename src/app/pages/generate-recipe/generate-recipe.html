@@ -28,7 +28,7 @@
               name="ingredientName"
               [ngModel]="ingredientName"
               lang="en"
-              pattern="[A-Za-z][A-Za-z '\u2019-]*"
+              pattern="[A-Za-z][A-Za-z '\u2019\-]*"
               autocomplete="off"
               aria-autocomplete="list"
               [attr.aria-expanded]="isIngredientMenuOpen"
@@ -48,7 +48,7 @@
 
             @if (isIngredientMenuOpen && !isUnitMenuOpen) {
               <ul class="ingredient-suggestions" role="listbox">
-                @for (suggestion of filteredIngredientSuggestions; track suggestion) {
+                @for (suggestion of filteredIngredientSuggestions; track $index) {
                   <li>
                     <button
                       type="button"
