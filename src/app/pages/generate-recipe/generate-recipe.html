@@ -33,7 +33,7 @@
               aria-autocomplete="list"
               [attr.aria-expanded]="isIngredientMenuOpen"
               [attr.aria-invalid]="ingredientError ? 'true' : null"
-              [attr.aria-describedby]="ingredientError ? 'ingredient-language-error' : null"
+              [attr.aria-describedby]="ingredientError ? 'ingredient-error' : null"
               (ngModelChange)="updateIngredientMenu($event)"
               (focus)="updateIngredientMenu(ingredientName)"
               (click)="$event.stopPropagation()"
@@ -41,7 +41,7 @@
             />
 
             @if (ingredientError) {
-              <p id="ingredient-language-error" class="field-error" role="alert">
+              <p id="ingredient-error" class="field-error" role="alert">
                 {{ ingredientError }}
               </p>
             }
@@ -160,7 +160,7 @@
       </section>
     </div>
 
-    @if (ingredients().length > 0) {
+    @if (ingredients().length >= 2) {
       <a class="next-button" routerLink="/generate-recipe/preferences">
         Next step
         <span aria-hidden="true">→</span>

@@ -42,7 +42,10 @@ function executeCodeNode(name, input, nodeData = {}) {
 }
 
 const validPayload = {
-  ingredients: [{ name: 'Potato', quantity: 800, unit: 'gram' }],
+  ingredients: [
+    { name: 'Potato', quantity: 600, unit: 'gram' },
+    { name: 'Carrot', quantity: 200, unit: 'gram' },
+  ],
   servings: 5,
   timeCategory: 'medium',
   cuisine: 'german',
@@ -88,6 +91,21 @@ const invalidRequest = executeCodeNode(
 assert.equal(invalidRequest.isValid, false);
 assert.ok(
   invalidRequest.validationErrors.includes('Helper count must be an integer between 1 and 3.'),
+);
+
+const oneIngredientRequest = executeCodeNode(
+  'Validate Recipe Request',
+  {},
+  {
+    'Select Pending Request': {
+      ...queueItem,
+      payload: { ...validPayload, ingredients: validPayload.ingredients.slice(0, 1) },
+    },
+  },
+);
+assert.equal(oneIngredientRequest.isValid, false);
+assert.ok(
+  oneIngredientRequest.validationErrors.includes('At least two ingredients are required.'),
 );
 
 const validationError = executeCodeNode(

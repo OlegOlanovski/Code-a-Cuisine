@@ -74,7 +74,7 @@ describe('Preferences', () => {
     expect(cooksOutput?.textContent?.trim()).toBe('3');
   });
 
-  it('generates a recipe with one valid ingredient', () => {
+  it('does not generate a recipe with only one ingredient', () => {
     const recipeDraft = TestBed.inject(RecipeDraft);
     recipeDraft.ingredients.set([{ name: 'Potato', quantity: 800, unit: 'gram' }]);
     recipeDraft.portions.set(5);
@@ -85,7 +85,10 @@ describe('Preferences', () => {
     fixture.detectChanges();
     clickGenerate(fixture.nativeElement);
 
-    expect(recipeGeneratorMock.generate).toHaveBeenCalledOnce();
+    fixture.detectChanges();
+
+    expect(recipeGeneratorMock.generate).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeTruthy();
   });
 
   it('does not generate when the daily quota is exhausted', () => {

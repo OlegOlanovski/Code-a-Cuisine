@@ -11,7 +11,7 @@ import { RecipeGenerator } from '../../services/recipe-generator';
   styleUrl: './preferences.scss',
 })
 export class Preferences implements OnInit {
-  private readonly minimumIngredientCount = 1;
+  private readonly minimumIngredientCount = 2;
   private readonly minimumAmountPerPortion = 150;
   private readonly recipeDraft = inject(RecipeDraft);
   private readonly recipeGenerator = inject(RecipeGenerator);

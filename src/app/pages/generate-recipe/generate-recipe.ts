@@ -1,6 +1,7 @@
 import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { findCatalogIngredient, INGREDIENT_CATALOG } from '../../data/ingredient-catalog';
 import { RecipeDraft } from '../../services/recipe-draft';
 
 @Component({
@@ -17,67 +18,7 @@ export class GenerateRecipe {
   protected quantity: number | null = null;
   protected unit = 'gram';
   protected readonly units = ['piece', 'ml', 'gram'];
-  protected readonly ingredientSuggestions = [
-    'Apple',
-    'Asparagus',
-    'Avocado',
-    'Bacon',
-    'Beef',
-    'Broccoli',
-    'Cabbage',
-    'Carrot',
-    'Chicken',
-    'Dates',
-    'Dill',
-    'Duck',
-    'Egg',
-    'Eggplant',
-    'Emmental',
-    'Fennel',
-    'Feta',
-    'Flour',
-    'Garlic',
-    'Ginger',
-    'Grapes',
-    'Ham',
-    'Hazelnut',
-    'Honey',
-    'Iceberg lettuce',
-    'Jalapeno',
-    'Kale',
-    'Kiwi',
-    'Lamb',
-    'Lemon',
-    'Lentils',
-    'Mango',
-    'Milk',
-    'Mushrooms',
-    'Noodles',
-    'Nutmeg',
-    'Oats',
-    'Olive oil',
-    'Onion',
-    'Paprika',
-    'Pasta',
-    'Potato',
-    'Quinoa',
-    'Radish',
-    'Rice',
-    'Rosemary',
-    'Salmon',
-    'Spinach',
-    'Strawberry',
-    'Thyme',
-    'Tomato',
-    'Tuna',
-    'Udon noodles',
-    'Vanilla',
-    'Walnut',
-    'Watermelon',
-    'Xanthan gum',
-    'Yogurt',
-    'Zucchini',
-  ];
+  protected readonly ingredientSuggestions = INGREDIENT_CATALOG;
   protected isUnitMenuOpen = false;
   protected isIngredientMenuOpen = false;
   protected editingIngredientIndex: number | null = null;
@@ -166,11 +107,27 @@ export class GenerateRecipe {
       return;
     }
 
-    if (!name || this.quantity === null || this.quantity <= 0) {
+    if (!name) {
       return;
     }
 
-    const ingredient = { name, quantity: this.quantity as number, unit: this.unit };
+    const catalogIngredient = findCatalogIngredient(name);
+
+    if (!catalogIngredient) {
+      this.ingredientError = 'Please choose a valid ingredient from the suggestions.';
+      this.isIngredientMenuOpen = this.filteredIngredientSuggestions.length > 0;
+      return;
+    }
+
+    if (this.quantity === null || this.quantity <= 0) {
+      return;
+    }
+
+    const ingredient = {
+      name: catalogIngredient,
+      quantity: this.quantity as number,
+      unit: this.unit,
+    };
 
     if (this.editingIngredientIndex === null) {
       this.ingredients.update((ingredients) => [ingredient, ...ingredients]);
