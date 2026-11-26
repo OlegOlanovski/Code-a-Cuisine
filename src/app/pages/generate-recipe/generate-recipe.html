@@ -160,11 +160,15 @@
       </section>
     </div>
 
-    @if (ingredients().length >= 2) {
-      <a class="next-button" routerLink="/generate-recipe/preferences">
-        Next step
-        <span aria-hidden="true">→</span>
-      </a>
-    }
+    <a
+      class="next-button"
+      [class.disabled]="ingredients().length < 2"
+      [routerLink]="ingredients().length >= 2 ? '/generate-recipe/preferences' : null"
+      [attr.aria-disabled]="ingredients().length < 2"
+      [attr.tabindex]="ingredients().length < 2 ? -1 : null"
+    >
+      Next step
+      <span aria-hidden="true">→</span>
+    </a>
   </main>
 </div>

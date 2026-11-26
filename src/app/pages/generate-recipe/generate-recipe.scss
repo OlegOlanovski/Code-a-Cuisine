@@ -456,8 +456,12 @@
   border: 0;
   border-radius: 5px;
 
-  &:hover {
+  &:not(.disabled):hover {
     background: var(--middle-green);
+  }
+
+  &.disabled {
+    opacity: 0.45;
   }
 }
 

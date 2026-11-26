@@ -67,14 +67,18 @@ describe('GenerateRecipe', () => {
     expect(element.querySelector('.field-error')).toBeNull();
   });
 
-  it('shows the next step only after two ingredients are added', () => {
+  it('enables the next step only after two ingredients are added', () => {
     const recipeDraft = TestBed.inject(RecipeDraft);
     recipeDraft.ingredients.set([{ name: 'Pasta', quantity: 100, unit: 'gram' }]);
 
     const fixture = TestBed.createComponent(GenerateRecipe);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.next-button')).toBeNull();
+    const nextButton = fixture.nativeElement.querySelector('.next-button');
+
+    expect(nextButton).toBeTruthy();
+    expect(nextButton.getAttribute('aria-disabled')).toBe('true');
+    expect(nextButton.getAttribute('href')).toBeNull();
 
     recipeDraft.ingredients.update((ingredients) => [
       ...ingredients,
@@ -82,6 +86,7 @@ describe('GenerateRecipe', () => {
     ]);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.next-button')).toBeTruthy();
+    expect(nextButton.getAttribute('aria-disabled')).toBe('false');
+    expect(nextButton.getAttribute('href')).toBeTruthy();
   });
 });
