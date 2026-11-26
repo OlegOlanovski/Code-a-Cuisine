@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 import { RecipeDraft } from '../../services/recipe-draft';
@@ -32,6 +32,18 @@ export class Preferences implements OnInit {
   protected readonly cuisines = ['German', 'Italian', 'Indian', 'Japanese', 'Gourmet', 'Fusion'];
   protected readonly diets = ['Vegetarian', 'Vegan', 'Keto', 'No preferences'];
   protected readonly isErrorPopupOpen = signal(false);
+  protected readonly errorPopupType = signal<'ingredients' | 'preferences'>('ingredients');
+  protected readonly missingPreferences = signal<string[]>([]);
+  protected readonly errorPopupTitle = computed(() =>
+    this.errorPopupType() === 'preferences' ? 'Selection required' : 'Ups! Not quite enough...',
+  );
+  protected readonly errorPopupDescription = computed(() => {
+    if (this.errorPopupType() === 'preferences') {
+      return `You haven't selected ${this.formatList(this.missingPreferences())}.`;
+    }
+
+    return 'It looks like some ingredient quantities aren’t sufficient for your selected servings. Please add or adjust quantities and try again.';
+  });
   protected readonly isGenerating = signal(false);
   protected readonly generationErrorMessage = signal<string | null>(null);
   protected readonly quotaStatus = this.recipeGenerator.quotaStatus;
@@ -96,8 +108,20 @@ export class Preferences implements OnInit {
       return;
     }
 
+    const missingPreferences = this.getMissingPreferences();
+
+    if (missingPreferences.length > 0) {
+      this.generationErrorMessage.set(null);
+      this.errorPopupType.set('preferences');
+      this.missingPreferences.set(missingPreferences);
+      this.isErrorPopupOpen.set(true);
+      return;
+    }
+
     if (!this.hasValidRecipeRequest()) {
       this.generationErrorMessage.set(null);
+      this.errorPopupType.set('ingredients');
+      this.missingPreferences.set([]);
       this.isErrorPopupOpen.set(true);
       return;
     }
@@ -225,5 +249,37 @@ export class Preferences implements OnInit {
     }, 0);
 
     return totalAvailableAmount >= portions * this.minimumAmountPerPortion;
+  }
+
+  /** Returns the labels of preference groups that still require a selection. */
+  private getMissingPreferences(): string[] {
+    const missingPreferences: string[] = [];
+
+    if (!this.cookingTimes.some((option) => option.label === this.cookingTime())) {
+      missingPreferences.push('Cooking time');
+    }
+
+    if (!this.cuisines.includes(this.cuisine())) {
+      missingPreferences.push('Cuisine');
+    }
+
+    if (!this.diets.includes(this.diet())) {
+      missingPreferences.push('Diet preferences');
+    }
+
+    return missingPreferences;
+  }
+
+  /** Formats a list using natural English conjunctions. */
+  private formatList(values: string[]): string {
+    if (values.length <= 1) {
+      return values[0] ?? '';
+    }
+
+    if (values.length === 2) {
+      return `${values[0]} and ${values[1]}`;
+    }
+
+    return `${values.slice(0, -1).join(', ')} and ${values.at(-1)}`;
   }
 }

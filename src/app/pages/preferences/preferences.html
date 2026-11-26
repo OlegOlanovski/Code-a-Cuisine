@@ -177,21 +177,33 @@
 
           <div class="error-popup-content">
             <div class="error-popup-copy">
-              <h2 id="recipe-error-title">
-                Ups! <br class="mobile-popup-break" />Not quite enough...
-              </h2>
-              <p id="recipe-error-description">
-                It looks like some ingredient quantities aren’t sufficient for your selected
-                servings. Please add or adjust quantities and try again.
-              </p>
+              <h2 id="recipe-error-title">{{ errorPopupTitle() }}</h2>
+              <p id="recipe-error-description">{{ errorPopupDescription() }}</p>
             </div>
 
-            <a class="error-popup-action" routerLink="/generate-recipe" (click)="closeErrorPopup()">
-              <span>Go back to ingredients</span>
-              <svg viewBox="0 0 24 20" aria-hidden="true">
-                <path d="M1 10h21M14 2l8 8-8 8" />
-              </svg>
-            </a>
+            @if (errorPopupType() === 'preferences') {
+              <button
+                class="error-popup-action generation-error-action"
+                type="button"
+                (click)="closeErrorPopup()"
+              >
+                <span>Back to preferences</span>
+                <svg viewBox="0 0 24 20" aria-hidden="true">
+                  <path d="M1 10h21M14 2l8 8-8 8" />
+                </svg>
+              </button>
+            } @else {
+              <a
+                class="error-popup-action"
+                routerLink="/generate-recipe"
+                (click)="closeErrorPopup()"
+              >
+                <span>Go back to ingredients</span>
+                <svg viewBox="0 0 24 20" aria-hidden="true">
+                  <path d="M1 10h21M14 2l8 8-8 8" />
+                </svg>
+              </a>
+            }
           </div>
         </section>
       </div>

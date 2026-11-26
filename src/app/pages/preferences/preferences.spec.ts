@@ -80,6 +80,7 @@ describe('Preferences', () => {
     recipeDraft.portions.set(5);
     recipeDraft.cookingTime.set('Quick');
     recipeDraft.cuisine.set('German');
+    recipeDraft.diet.set('No preferences');
 
     const fixture = TestBed.createComponent(Preferences);
     fixture.detectChanges();
@@ -116,14 +117,45 @@ describe('Preferences', () => {
     ).toContain('daily limit of 9 recipes');
   });
 
-  it('shows the error popup when there are not enough ingredients', () => {
+  it('lists every preference that has not been selected', () => {
+    const recipeDraft = TestBed.inject(RecipeDraft);
+    recipeDraft.ingredients.set([
+      { name: 'Pasta', quantity: 400, unit: 'gram' },
+      { name: 'Tomato', quantity: 400, unit: 'gram' },
+    ]);
+
     const fixture = TestBed.createComponent(Preferences);
     fixture.detectChanges();
 
     clickGenerate(fixture.nativeElement);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeTruthy();
+    const popup = fixture.nativeElement.querySelector('[role="alertdialog"]');
+
+    expect(popup).toBeTruthy();
+    expect(popup.querySelector('#recipe-error-title')?.textContent).toContain('Selection required');
+    expect(popup.querySelector('#recipe-error-description')?.textContent).toContain(
+      "You haven't selected Cooking time, Cuisine and Diet preferences.",
+    );
+    expect(popup.querySelector('.error-popup-action')?.textContent).toContain(
+      'Back to preferences',
+    );
+  });
+
+  it('names cooking time when it is the only missing preference', () => {
+    const recipeDraft = TestBed.inject(RecipeDraft);
+    setValidDraft(recipeDraft);
+    recipeDraft.cookingTime.set('');
+
+    const fixture = TestBed.createComponent(Preferences);
+    fixture.detectChanges();
+    clickGenerate(fixture.nativeElement);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('#recipe-error-description')?.textContent?.trim(),
+    ).toBe("You haven't selected Cooking time.");
+    expect(recipeGeneratorMock.generate).not.toHaveBeenCalled();
   });
 
   it('shows the error popup when quantities are insufficient for the portions', () => {
@@ -135,6 +167,7 @@ describe('Preferences', () => {
     recipeDraft.portions.set(5);
     recipeDraft.cookingTime.set('Quick');
     recipeDraft.cuisine.set('Italian');
+    recipeDraft.diet.set('No preferences');
 
     const fixture = TestBed.createComponent(Preferences);
     fixture.detectChanges();
@@ -180,4 +213,5 @@ function setValidDraft(recipeDraft: RecipeDraft): void {
   recipeDraft.portions.set(5);
   recipeDraft.cookingTime.set('Quick');
   recipeDraft.cuisine.set('Italian');
+  recipeDraft.diet.set('No preferences');
 }

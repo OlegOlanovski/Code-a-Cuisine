@@ -30,7 +30,7 @@ export class Recipes {
     const snapshot = await get(ref(database, `recipes/${id}`));
     const value = snapshot.val();
 
-    return value ? { id, ...value } : null;
+    return value ? this.normalizeRecipe(id, value) : null;
   }
 
   /**
@@ -89,9 +89,32 @@ export class Recipes {
       return [];
     }
 
-    return Object.entries(data).map(([id, recipe]) => ({
+    return Object.entries(data).map(([id, recipe]) => this.normalizeRecipe(id, recipe));
+  }
+
+  /** Converts numeric ingredient strings from legacy Firebase records to numbers. */
+  private normalizeRecipe(id: string, recipe: Omit<Recipe, 'id'>): Recipe {
+    return {
       id,
       ...recipe,
-    }));
+      yourIngredients: recipe.yourIngredients.map((ingredient) => ({
+        ...ingredient,
+        amount: this.normalizeAmount(ingredient.amount),
+      })),
+      extraIngredients: recipe.extraIngredients.map((ingredient) => ({
+        ...ingredient,
+        amount: this.normalizeAmount(ingredient.amount),
+      })),
+    };
+  }
+
+  /** Returns a finite numeric amount or `null` for missing and invalid values. */
+  private normalizeAmount(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : null;
   }
 }

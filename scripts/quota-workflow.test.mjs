@@ -77,6 +77,38 @@ assert.equal(validRequest.isValid, true);
 assert.equal(validRequest.ipKey, queueItem.quotaIp);
 assert.equal(validRequest.requestId, 'request_1');
 
+const generatedRecipe = {
+  name: 'Test recipe',
+  diet: 'none',
+  timeCategory: 'medium',
+  cookingTime: '25',
+  yourIngredients: [{ amount: '600', unit: 'g', name: 'Potato' }],
+  extraIngredients: [{ amount: '1', unit: 'piece', name: 'Onion' }],
+  directions: [
+    {
+      step: '1',
+      title: 'Cook',
+      chef: '1',
+      parallel: false,
+      waitMinutes: null,
+      description: 'Cook the ingredients.',
+    },
+  ],
+  nutritionPerServing: { energy: '300', protein: '10', carbs: '40', fat: '8' },
+};
+const parsedRecipe = executeCodeNode(
+  'Parse Generated Recipes',
+  { text: JSON.stringify([generatedRecipe, generatedRecipe, generatedRecipe]) },
+  { 'Validate Recipe Request': validRequest },
+);
+assert.equal(typeof parsedRecipe.cookingTime, 'number');
+assert.equal(typeof parsedRecipe.yourIngredients[0].amount, 'number');
+assert.equal(typeof parsedRecipe.extraIngredients[0].amount, 'number');
+assert.equal(typeof parsedRecipe.directions[0].step, 'number');
+assert.equal(typeof parsedRecipe.directions[0].chef, 'number');
+assert.equal(typeof parsedRecipe.nutritionPerServing.energy, 'number');
+assert.equal(parsedRecipe.nutritionTotal.energy, 1500);
+
 const invalidQueueItem = {
   ...queueItem,
   payload: { ...validPayload, helperCount: 4 },
@@ -104,9 +136,7 @@ const oneIngredientRequest = executeCodeNode(
   },
 );
 assert.equal(oneIngredientRequest.isValid, false);
-assert.ok(
-  oneIngredientRequest.validationErrors.includes('At least two ingredients are required.'),
-);
+assert.ok(oneIngredientRequest.validationErrors.includes('At least two ingredients are required.'));
 
 const validationError = executeCodeNode(
   'Build Queue Validation Error',

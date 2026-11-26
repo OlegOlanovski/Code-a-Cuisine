@@ -213,6 +213,12 @@ export class RecipeDetail implements OnInit {
    * @returns A compact decimal string.
    */
   private formatNumber(value: number): string {
-    return Number(value.toFixed(2)).toString();
+    const numberValue = Number(value);
+
+    if (!Number.isFinite(numberValue)) {
+      return '';
+    }
+
+    return Number(numberValue.toFixed(2)).toString();
   }
 }
