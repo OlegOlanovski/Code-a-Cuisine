@@ -53,8 +53,8 @@
       "id": "3f8318f6-4c57-4504-9d4b-3d948fc148c2",
       "name": "Generate Recipes",
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000,
+      "maxTries": 5,
+      "waitBetweenTries": 15000,
       "onError": "continueErrorOutput"
     },
     {

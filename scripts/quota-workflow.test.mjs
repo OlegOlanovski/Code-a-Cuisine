@@ -249,8 +249,8 @@ assert.equal(
 );
 assert.equal(workflow.connections['Is Quota Available?'].main[1][0].node, 'Generate Recipes');
 assert.equal(nodes.get('Generate Recipes')?.retryOnFail, true);
-assert.equal(nodes.get('Generate Recipes')?.maxTries, 3);
-assert.equal(nodes.get('Generate Recipes')?.waitBetweenTries, 5000);
+assert.equal(nodes.get('Generate Recipes')?.maxTries, 5);
+assert.equal(nodes.get('Generate Recipes')?.waitBetweenTries, 15000);
 assert.equal(nodes.get('Generate Recipes')?.onError, 'continueErrorOutput');
 assert.equal(
   workflow.connections['Generate Recipes'].main[1][0].node,
